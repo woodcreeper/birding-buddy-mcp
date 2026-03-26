@@ -13,8 +13,16 @@
     "mcp",
     "birding"
   ],
-  "author": "",
+  "author": "David La Puma",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/woodcreeper/birding-buddy-mcp.git"
+  },
+  "homepage": "https://github.com/woodcreeper/birding-buddy-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/woodcreeper/birding-buddy-mcp/issues"
+  },
   "description": "Birding Buddy MCP — AI-powered birding companion with eBird, Macaulay Library, and Xeno-canto",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.28.0",
