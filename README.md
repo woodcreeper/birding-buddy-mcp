@@ -65,6 +65,73 @@ You'll see a confirmation with your total species count and number of countries.
 
 ---
 
+## Your Life List — The Killer Feature
+
+Your life list is what makes this server different from every other eBird tool. Once imported, it powers all the "intelligence" tools — turning generic queries like "what birds are here?" into personal ones like "what birds are here that *I* haven't seen?"
+
+### How it works
+
+1. **Import once** — the `import_life_list` tool parses your eBird CSV and stores it locally at `~/.ebird-mcp/life-list.json`. This file persists across Claude sessions. You don't need to re-import every time you open Claude.
+
+2. **Automatic filtering** — the compound tools (`get_life_list_gaps_nearby`, `get_life_list_gaps_at_hotspot`) automatically cross-reference live eBird observations against your life list. Species you've already seen are filtered out; what remains are your potential lifers, ranked by how frequently they're being reported.
+
+3. **Re-import to refresh** — after a trip where you added new species, re-download your CSV from eBird and re-import. The new file overwrites the old one. Your life list is always as current as your last import.
+
+### What's in the CSV?
+
+eBird's "Download My Data" CSV contains every observation you've ever submitted: species, date, location, count, and more. The server extracts the unique species and keeps the earliest observation date for each — that's your life list. It deduplicates by scientific name, so subspecies and regional forms are handled correctly.
+
+### What you can ask
+
+| Question | What happens |
+|----------|-------------|
+| "What lifers can I get near me?" | Queries nearby observations, filters against your life list, ranks by report frequency |
+| "Is Resplendent Quetzal on my life list?" | Looks up the species by scientific name in your local data |
+| "How many species have I seen?" | Summarizes your list with breakdowns by country and year |
+| "What haven't I seen at this hotspot?" | Gets recent observations at the hotspot, removes species you've seen |
+| "What new birds could I find on my drive from A to B?" | Finds hotspots along the route, then filters each for your life list gaps |
+
+### Life list data stays local
+
+Your life list never leaves your machine. It's stored as a JSON file in `~/.ebird-mcp/` and is only read by the MCP server running on your computer. No data is sent to any external service — the eBird API is only queried for *public* observation data, never your personal data.
+
+---
+
+## Media Gap Discovery — Macaulay Library + Xeno-canto
+
+The `get_media_gaps` tool helps you find species that are under-documented — the ones with the fewest photos, audio recordings, or videos. This is for birders who want to *contribute*, not just consume.
+
+### How it works
+
+1. **Gets the species list** for your chosen region from the eBird API
+2. **Queries Macaulay Library** for each species — counts photos, audio recordings, and videos using the same `taxonCode` that eBird uses
+3. **Queries Xeno-canto** for each species by scientific name — counts audio recordings
+4. **Combines and sorts** results by total media count, ascending — species with the least coverage float to the top
+
+### Rate limiting and performance
+
+Both APIs are queried respectfully:
+- **Macaulay Library** — ~2-3 requests/sec (the API is undocumented but stable; we're conservative)
+- **Xeno-canto** — ~2-3 requests/sec
+
+For the default 50 species, this takes about **40 seconds**. You can increase `maxSpecies` up to 200, but expect 2-4 minutes for larger queries. Results are cached in memory during your session to avoid redundant queries.
+
+### What you can ask
+
+| Question | What happens |
+|----------|-------------|
+| "What species in Quintana Roo have the fewest audio recordings?" | Queries both APIs for audio counts, sorted ascending |
+| "Find photo gaps in New York state" | Queries Macaulay for photo counts only |
+| "What birds here have no recordings at all?" | Finds species with zero combined media assets |
+
+### Fallback behavior
+
+Macaulay Library's API is undocumented — it works reliably today, but there's no official stability guarantee. If it ever goes down, the tool falls back to Xeno-canto audio counts only. You'll still get useful results, just without photo/video data.
+
+Xeno-canto has a public, documented API. If *both* services are down (unlikely), the tool will return an error rather than silent empty results.
+
+---
+
 ## Example Conversations
 
 These are real things you can say to Claude once the server is running. Claude will call the appropriate tools automatically.
