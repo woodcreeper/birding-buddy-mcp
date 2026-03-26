@@ -1,0 +1,28 @@
+{
+  "name": "birding-buddy-mcp",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "ebird",
+    "mcp",
+    "birding"
+  ],
+  "author": "",
+  "license": "MIT",
+  "description": "Birding Buddy MCP — AI-powered birding companion with eBird, Macaulay Library, and Xeno-canto",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.28.0",
+    "csv-parse": "^6.2.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^6.0.2"
+  }
+}
