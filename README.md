@@ -1,6 +1,6 @@
-# eBird MCP Server — "Birding Buddy"
+# Birding Buddy MCP
 
-Your AI-powered birding companion. A TypeScript [MCP](https://modelcontextprotocol.io/) server that connects Claude to the eBird API and adds personal intelligence — life list tracking, route-based hotspot discovery, and media gap analysis via Macaulay Library and Xeno-canto.
+Your AI-powered birding companion. A TypeScript [MCP](https://modelcontextprotocol.io/) server that connects Claude to the [eBird API](https://documenter.getpostman.com/view/664302/S1ENwy59), [Macaulay Library](https://www.macaulaylibrary.org/), and [Xeno-canto](https://xeno-canto.org/) — with personal intelligence like life list tracking, route-based hotspot discovery, and media gap analysis.
 
 **21 tools** across 4 categories: core eBird API, life list management, compound intelligence, and utilities.
 
@@ -27,8 +27,8 @@ Go to [ebird.org/api/keygen](https://ebird.org/api/keygen) and request a key (fr
 ### 2. Clone and build
 
 ```bash
-git clone https://github.com/your-username/ebird-mcp.git
-cd ebird-mcp
+git clone https://github.com/woodcreeper/birding-buddy-mcp.git
+cd birding-buddy-mcp
 npm install
 npm run build
 ```

@@ -1,5 +1,5 @@
 {
-  "name": "ebird-mcp",
+  "name": "birding-buddy-mcp",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
@@ -15,7 +15,7 @@
   ],
   "author": "",
   "license": "MIT",
-  "description": "eBird MCP server — your AI birding buddy",
+  "description": "Birding Buddy MCP — AI-powered birding companion with eBird, Macaulay Library, and Xeno-canto",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.28.0",
     "csv-parse": "^6.2.1",

@@ -11,7 +11,7 @@ import { registerFrequencyTools } from "./tools/frequency.js";
 
 export function createServer(apiKey: string): McpServer {
   const server = new McpServer({
-    name: "ebird-mcp",
+    name: "birding-buddy-mcp",
     version: "1.0.0",
   });
 
