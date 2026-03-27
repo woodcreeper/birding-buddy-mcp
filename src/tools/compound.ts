@@ -18,8 +18,9 @@ export function registerCompoundTools(server: McpServer, client: EBirdClient, st
       lng: z.number().describe("Your longitude"),
       dist: z.number().min(0).max(50).optional().describe("Search radius in km (0-50, default 25)"),
       back: z.number().min(1).max(30).optional().describe("Days back (1-30, default 14)"),
+      native_only: z.boolean().optional().describe("If true, exclude introduced/exotic species (default false)"),
     },
-    async ({ lat, lng, dist, back }) => {
+    async ({ lat, lng, dist, back, native_only }) => {
       const [observations, lifeListNames] = await Promise.all([
         client.getNearbyObservations(lat, lng, { dist, back }),
         getLifeListNames(store),
@@ -35,6 +36,7 @@ export function registerCompoundTools(server: McpServer, client: EBirdClient, st
       const speciesMap = new Map<string, { obs: Observation; count: number }>();
       for (const obs of observations) {
         if (lifeListNames.has(obs.sciName)) continue; // Already on life list
+        if (native_only && obs.exoticCategory) continue; // Exotic species filtered out
         const existing = speciesMap.get(obs.sciName);
         if (existing) {
           existing.count++;
@@ -71,8 +73,9 @@ export function registerCompoundTools(server: McpServer, client: EBirdClient, st
     {
       locId: z.string().describe("eBird hotspot location ID (e.g., L1234567)"),
       back: z.number().min(1).max(30).optional().describe("Days back for recent observations (1-30, default 14)"),
+      native_only: z.boolean().optional().describe("If true, exclude introduced/exotic species (default false)"),
     },
-    async ({ locId, back }) => {
+    async ({ locId, back, native_only }) => {
       // Get recent observations at this location using region-based query
       // The locId can be used as a region code for some endpoints
       const [observations, lifeListNames] = await Promise.all([
@@ -89,6 +92,7 @@ export function registerCompoundTools(server: McpServer, client: EBirdClient, st
       const speciesMap = new Map<string, { obs: Observation; count: number }>();
       for (const obs of observations) {
         if (lifeListNames.has(obs.sciName)) continue;
+        if (native_only && obs.exoticCategory) continue;
         const existing = speciesMap.get(obs.sciName);
         if (existing) {
           existing.count++;
