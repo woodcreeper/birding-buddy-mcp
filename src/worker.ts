@@ -135,25 +135,28 @@ async function handleCsvUpload(request: Request, env: Env): Promise<Response> {
   try {
     const contentType = request.headers.get("content-type") || "";
 
-    // Check upload secret
-    if (env.UPLOAD_SECRET) {
-      let providedSecret: string | null = null;
+    // Check upload secret — reject if not configured or wrong
+    if (!env.UPLOAD_SECRET) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Upload not configured. Set UPLOAD_SECRET on this Worker." }),
+        { status: 403, headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
+      );
+    }
 
-      if (contentType.includes("multipart/form-data")) {
-        // For form submissions, we need to clone the request since formData() consumes the body
-        const cloned = request.clone();
-        const peekForm = await cloned.formData();
-        providedSecret = peekForm.get("secret") as string | null;
-      } else {
-        providedSecret = request.headers.get("x-upload-secret");
-      }
+    let providedSecret: string | null = null;
+    if (contentType.includes("multipart/form-data")) {
+      const cloned = request.clone();
+      const peekForm = await cloned.formData();
+      providedSecret = peekForm.get("secret") as string | null;
+    } else {
+      providedSecret = request.headers.get("x-upload-secret");
+    }
 
-      if (providedSecret !== env.UPLOAD_SECRET) {
-        return new Response(
-          JSON.stringify({ success: false, error: "Invalid upload password" }),
-          { status: 403, headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
-        );
-      }
+    if (providedSecret !== env.UPLOAD_SECRET) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid upload password" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
+      );
     }
 
     let csvContent: string;
