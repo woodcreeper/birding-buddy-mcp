@@ -9,6 +9,16 @@ if (!apiKey) {
   process.exit(1);
 }
 
-const server = createServer(apiKey);
+const xcApiKey = process.env.XC_API_KEY;
+if (!xcApiKey) {
+  console.error(
+    "Note: XC_API_KEY not set — Xeno-canto enrichment tools will be unavailable."
+  );
+  console.error(
+    "Get your key at: https://xeno-canto.org (requires verified account)"
+  );
+}
+
+const server = createServer(apiKey, xcApiKey);
 const transport = new StdioServerTransport();
 await server.connect(transport);

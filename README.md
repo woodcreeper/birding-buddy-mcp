@@ -1,8 +1,10 @@
 # Birding Buddy MCP
 
-Your AI-powered birding companion. A TypeScript [MCP](https://modelcontextprotocol.io/) server that connects Claude to the [eBird API](https://documenter.getpostman.com/view/664302/S1ENwy59), [Macaulay Library](https://www.macaulaylibrary.org/), and [Xeno-canto](https://xeno-canto.org/) — with personal intelligence like life list tracking, route-based hotspot discovery, and media gap analysis.
+Your AI-powered birding companion. A TypeScript [MCP](https://modelcontextprotocol.io/) server that connects Claude to the [eBird API](https://documenter.getpostman.com/view/664302/S1ENwy59), [Macaulay Library](https://www.macaulaylibrary.org/), and [Xeno-canto](https://xeno-canto.org/) — with personal intelligence like life list tracking, route-based hotspot discovery, media gap analysis, and Xeno-canto recording enrichment.
 
-**21 tools** across 4 categories: core eBird API, life list management, compound intelligence, and utilities.
+**23 tools** across 5 categories: core eBird API, life list management, compound intelligence, Xeno-canto enrichment, and utilities.
+
+The server includes a **Birding Buddy** persona — always-active instructions that tell Claude how to route your questions to the right tools, group results by bird category, highlight rarities, and offer recording gap analysis when relevant. Just talk naturally.
 
 ---
 
@@ -13,18 +15,35 @@ Existing eBird MCP servers are thin API wrappers — they give Claude access to 
 - **Your life list** — imported from eBird's CSV export, so every query can filter for species you haven't seen
 - **Route intelligence** — finds birding hotspots along a driving route, not just near a single point
 - **Media gap discovery** — surfaces species with the fewest photos and recordings, so you can contribute where it matters most
+- **Recording enrichment** — checks Xeno-canto for species with the fewest quality recordings, so you can target your sound recording efforts
 
 The eBird API provides the raw data. Claude provides the intelligence — it already knows which species are endemic, how to prioritize a birding itinerary, and how to reason about detection probability. This server bridges the two.
 
 ---
 
-## Quick Start
+## Setup
 
-### 1. Get an eBird API key
+### 1. Get your API keys
 
-Go to [ebird.org/api/keygen](https://ebird.org/api/keygen) and request a key (free, instant).
+- **eBird API key** (required) — go to [ebird.org/api/keygen](https://ebird.org/api/keygen) and request a key (free, instant).
+- **Xeno-canto API key** (optional) — register at [xeno-canto.org](https://xeno-canto.org), verify your email, then find your key on your account page. Enables recording gap analysis.
 
-### 2. Clone and build
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and add your keys:
+
+```
+EBIRD_API_KEY=your-ebird-key-here
+XC_API_KEY=your-xeno-canto-key-here
+```
+
+The Xeno-canto key is optional — if omitted, all eBird tools work normally but the Xeno-canto enrichment tools will return a helpful error message.
+
+### 3. Clone and build
 
 ```bash
 git clone https://github.com/woodcreeper/birding-buddy-mcp.git
@@ -33,7 +52,7 @@ npm install
 npm run build
 ```
 
-### 3. Add to Claude Desktop
+### 4. Add to Claude Desktop
 
 Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -42,9 +61,10 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "ebird": {
       "command": "node",
-      "args": ["/absolute/path/to/ebird-mcp/dist/index.js"],
+      "args": ["/absolute/path/to/birding-buddy-mcp/dist/index.js"],
       "env": {
-        "EBIRD_API_KEY": "your-api-key-here"
+        "EBIRD_API_KEY": "your-ebird-key-here",
+        "XC_API_KEY": "your-xeno-canto-key-here"
       }
     }
   }
@@ -53,7 +73,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 Restart Claude Desktop after saving.
 
-### 4. Import your life list
+### 5. Import your life list
 
 1. Go to [My eBird → Download My Data](https://ebird.org/downloadMyData)
 2. Download the CSV file
@@ -97,38 +117,55 @@ Your life list never leaves your machine. It's stored as a JSON file in `~/.ebir
 
 ---
 
-## Media Gap Discovery — Macaulay Library + Xeno-canto
+## Media Gap Discovery — Macaulay Library
 
 The `get_media_gaps` tool helps you find species that are under-documented — the ones with the fewest photos, audio recordings, or videos. This is for birders who want to *contribute*, not just consume.
+
+**Important:** This tool is most useful for under-birded regions (e.g., MX-ROO, small island nations). For well-birded regions like the US or UK, the results are meaningless since virtually all species have extensive media coverage.
 
 ### How it works
 
 1. **Gets the species list** for your chosen region from the eBird API
 2. **Queries Macaulay Library** for each species — counts photos, audio recordings, and videos using the same `taxonCode` that eBird uses
-3. **Queries Xeno-canto** for each species by scientific name — counts audio recordings
-4. **Combines and sorts** results by total media count, ascending — species with the least coverage float to the top
+3. **Sorts** results by total media count, ascending — species with the least coverage float to the top
 
 ### Rate limiting and performance
 
-Both APIs are queried respectfully:
 - **Macaulay Library** — ~2-3 requests/sec (the API is undocumented but stable; we're conservative)
-- **Xeno-canto** — ~2-3 requests/sec
 
-For the default 50 species, this takes about **40 seconds**. You can increase `maxSpecies` up to 200, but expect 2-4 minutes for larger queries. Results are cached in memory during your session to avoid redundant queries.
+For the default 50 species, this takes about **20 seconds**. You can increase `maxSpecies` up to 200, but expect 1-2 minutes for larger queries.
+
+### Fallback behavior
+
+Macaulay Library's API is undocumented — it works reliably today, but there's no official stability guarantee. If it goes down, the tool will return an error rather than silent empty results.
+
+---
+
+## Xeno-canto Recording Enrichment
+
+After Claude presents a species list from any observation query, it will offer to check Xeno-canto for recording gaps. This two-stage workflow keeps initial queries fast and respects Xeno-canto's API.
+
+### How it works
+
+1. Claude presents a species list (from `get_nearby_observations`, `get_life_list_gaps_nearby`, etc.)
+2. Claude asks: *"Want me to check which of these have the fewest quality recordings on Xeno-canto?"*
+3. If you say yes, it calls `enrich_species_list` — which queries Xeno-canto for each species and returns them sorted by fewest A-grade recordings
+4. The top recording targets are presented with quality grade breakdowns (A through E)
 
 ### What you can ask
 
 | Question | What happens |
 |----------|-------------|
-| "What species in Quintana Roo have the fewest audio recordings?" | Queries both APIs for audio counts, sorted ascending |
-| "Find photo gaps in New York state" | Queries Macaulay for photo counts only |
-| "What birds here have no recordings at all?" | Finds species with zero combined media assets |
+| "Yes, check Xeno-canto" (after a species list) | Enriches the list with XC recording counts, sorted by contribution priority |
+| "How many recordings does [species] have?" | Calls `get_recording_counts` for a single species |
 
-### Fallback behavior
+### Rate limiting
 
-Macaulay Library's API is undocumented — it works reliably today, but there's no official stability guarantee. If it ever goes down, the tool falls back to Xeno-canto audio counts only. You'll still get useful results, just without photo/video data.
+Xeno-canto is queried at ~5 requests/sec (200ms delay between calls). For 50 species, expect about 10 seconds. The tool warns you before processing large lists.
 
-Xeno-canto has a public, documented API. If *both* services are down (unlikely), the tool will return an error rather than silent empty results.
+### API key required
+
+Xeno-canto enrichment requires an API key (free with a verified account). See [Setup](#setup) for configuration. If the key is not configured, the enrichment tools return a helpful error message — all other tools continue working normally.
 
 ---
 
@@ -183,18 +220,17 @@ These are real things you can say to Claude once the server is running. Claude w
 
 ### Media Contribution — "Where can I contribute recordings?"
 
-> **You:** I'm doing sound recordings in Quintana Roo. What species here have the fewest audio recordings? I want to fill gaps.
+> **You:** I'm doing sound recordings in Quintana Roo. What species here have the fewest media records?
 >
 > **Claude:** *(calls `get_media_gaps` with regionCode MX-ROO, mediaType audio)*
 >
 > Here are species in Quintana Roo with the fewest audio recordings:
 >
-> 1. **Yucatan Poorwill** — Macaulay: 0 audio | Xeno-canto: 2 recordings | Total: 2
-> 2. **Cozumel Vireo** — Macaulay: 1 audio | Xeno-canto: 3 recordings | Total: 4
-> 3. **Yucatan Nightjar** — Macaulay: 2 audio | Xeno-canto: 1 recording | Total: 3
-> 4. ...
+> 1. **Yucatan Poorwill** — 0 photos, 0 audio, 0 video | Total: 0
+> 2. **Cozumel Vireo** — 1 photo, 1 audio, 0 video | Total: 2
+> 3. ...
 >
-> The Yucatan Poorwill has almost zero audio coverage — if you can record one, that would be a significant contribution.
+> Want me to check which of these have the fewest quality recordings on Xeno-canto? I can flag the best targets for contributing new recordings.
 
 ### Life List Stats — "How am I doing?"
 
@@ -224,7 +260,7 @@ These are real things you can say to Claude once the server is running. Claude w
 >
 > Resplendent Quetzal (*Pharomachrus mocinno*) — species code: `resque1`, Family: Trogonidae.
 >
-> ✗ Not on your life list — this would be a lifer!
+> Not on your life list — this would be a lifer!
 
 ### Detection Probability — "Is this the right time?"
 
@@ -253,7 +289,7 @@ These are real things you can say to Claude once the server is running. Claude w
 
 ---
 
-## Tools Reference (21 total)
+## Tools Reference (23 total)
 
 ### Core eBird API (12 tools)
 
@@ -287,7 +323,14 @@ These are real things you can say to Claude once the server is running. Claude w
 | `get_life_list_gaps_nearby` | Find potential lifers near your location | `lat`, `lng`, `dist`, `back` |
 | `get_life_list_gaps_at_hotspot` | Species at a hotspot not on your life list | `locId`, `back` |
 | `get_hotspots_along_route` | Birding stops along a driving route (uses OSRM) | `startLat/Lng`, `endLat/Lng`, `hotspotRadius` |
-| `get_media_gaps` | Species with fewest recordings/photos (Macaulay + Xeno-canto) | `regionCode`, `maxSpecies`, `mediaType` |
+| `get_media_gaps` | Species with fewest media records (Macaulay only, under-birded regions) | `regionCode`, `maxSpecies`, `mediaType` |
+
+### Xeno-canto Enrichment (2 tools)
+
+| Tool | Description | Key Parameters |
+|------|-------------|----------------|
+| `get_recording_counts` | Recording count by quality grade (A-E) for a species | `speciesName`, `country` |
+| `enrich_species_list` | Batch XC enrichment, sorted by fewest A-grade recordings | `species` (array), `country` |
 
 ### Utility (2 tools)
 
@@ -301,15 +344,17 @@ These are real things you can say to Claude once the server is running. Claude w
 ## How It Works
 
 ```
-You → Claude Desktop → MCP Protocol → ebird-mcp server
+You → Claude Desktop → MCP Protocol → birding-buddy-mcp server
                                           ├── eBird API 2.0 (observations, hotspots, taxonomy)
                                           ├── OSRM (driving routes)
                                           ├── Macaulay Library (photo/audio/video counts)
-                                          ├── Xeno-canto (audio recording counts)
+                                          ├── Xeno-canto API v3 (recording counts by quality grade)
                                           └── Local life list (~/.ebird-mcp/life-list.json)
 ```
 
 The server handles all API calls and data plumbing. Claude handles the intelligence — it knows endemic species, understands birding priorities, and can synthesize data from multiple tools into trip plans and recommendations.
+
+The **Birding Buddy** persona (delivered via MCP server instructions) tells Claude how to route your questions, present results grouped by bird category, and offer Xeno-canto enrichment at the right time.
 
 ### External APIs
 
@@ -318,7 +363,7 @@ The server handles all API calls and data plumbing. Claude handles the intellige
 | [eBird API 2.0](https://documenter.getpostman.com/view/664302/S1ENwy59) | Observations, hotspots, taxonomy | API key | ~200 req/hr |
 | [OSRM](http://project-osrm.org/) | Driving route calculation | None | Fair use (public demo server) |
 | [Macaulay Library](https://www.macaulaylibrary.org/) | Media asset counts | None | ~2-3 req/sec |
-| [Xeno-canto](https://xeno-canto.org/) | Audio recording counts | None | Fair use |
+| [Xeno-canto API v3](https://xeno-canto.org/explore/api) | Recording counts by quality grade | API key | Fair use |
 
 ### Life List Storage
 
@@ -359,7 +404,9 @@ src/
 │   ├── ebird.ts          # eBird API 2.0 client (typed)
 │   ├── osrm.ts           # OSRM routing client
 │   ├── macaulay.ts       # Macaulay Library search client
-│   └── xeno-canto.ts     # Xeno-canto API client
+│   └── xeno-canto.ts     # Xeno-canto API v3 client
+├── prompts/
+│   └── birding-buddy.ts  # Birding Buddy persona instructions
 ├── data/
 │   └── life-list.ts      # Life list CSV import and storage
 ├── tools/
@@ -370,6 +417,7 @@ src/
 │   ├── life-list.ts      # 3 life list tools
 │   ├── compound.ts       # 3 compound intelligence tools
 │   ├── media.ts          # 1 media gap tool
+│   ├── xeno-canto.ts     # 2 Xeno-canto enrichment tools
 │   └── frequency.ts      # 1 frequency estimation tool
 └── utils/
     ├── geo.ts            # Haversine distance, waypoint sampling
