@@ -20,6 +20,21 @@ jobs:
 
       - run: npm run build:worker
 
+      - name: Generate wrangler.toml
+        env:
+          KV_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}
+        run: |
+          cat > wrangler.toml << EOF
+          name = "birding-buddy"
+          main = "dist/worker.js"
+          compatibility_date = "2025-01-01"
+          compatibility_flags = ["nodejs_compat"]
+
+          [[kv_namespaces]]
+          binding = "LIFE_LIST_KV"
+          id = "${KV_NAMESPACE_ID}"
+          EOF
+
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

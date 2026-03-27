@@ -5,6 +5,7 @@ import { parseCsv } from "./data/life-list.js";
 interface Env {
   EBIRD_API_KEY: string;
   XC_API_KEY?: string;
+  UPLOAD_SECRET?: string;
   LIFE_LIST_KV: KVNamespace;
 }
 
@@ -57,6 +58,8 @@ function uploadFormHtml(): string {
         <li>Upload it below</li>
       </ol>
       <form id="upload-form" enctype="multipart/form-data">
+        <label for="secret">Upload password</label>
+        <input type="password" id="secret" name="secret" placeholder="Enter your upload password" required style="display:block;width:100%;padding:0.75rem;border:1px solid #b2bec3;border-radius:8px;margin-bottom:1rem;font-size:1rem;">
         <label for="csv">Choose your eBird CSV file</label>
         <input type="file" id="csv" name="csv" accept=".csv" required>
         <button type="submit" id="submit-btn">Upload Life List</button>
@@ -101,6 +104,7 @@ function uploadFormHtml(): string {
 
       var formData = new FormData();
       formData.append('csv', fileInput.files[0]);
+      formData.append('secret', document.getElementById('secret').value);
 
       fetch('/upload', { method: 'POST', body: formData })
         .then(function(resp) { return resp.json(); })
@@ -129,8 +133,30 @@ function uploadFormHtml(): string {
 
 async function handleCsvUpload(request: Request, env: Env): Promise<Response> {
   try {
-    let csvContent: string;
     const contentType = request.headers.get("content-type") || "";
+
+    // Check upload secret
+    if (env.UPLOAD_SECRET) {
+      let providedSecret: string | null = null;
+
+      if (contentType.includes("multipart/form-data")) {
+        // For form submissions, we need to clone the request since formData() consumes the body
+        const cloned = request.clone();
+        const peekForm = await cloned.formData();
+        providedSecret = peekForm.get("secret") as string | null;
+      } else {
+        providedSecret = request.headers.get("x-upload-secret");
+      }
+
+      if (providedSecret !== env.UPLOAD_SECRET) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Invalid upload password" }),
+          { status: 403, headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
+        );
+      }
+    }
+
+    let csvContent: string;
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await request.formData();

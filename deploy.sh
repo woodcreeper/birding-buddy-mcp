@@ -69,6 +69,15 @@ if [ -n "$XC_KEY" ]; then
   echo ""
 fi
 
+read -sp "Upload password (protects the /upload page — required): " UPLOAD_SECRET
+printf '\n'
+if [ -z "$UPLOAD_SECRET" ]; then
+  echo "Error: Upload password is required to protect life list uploads."
+  exit 1
+fi
+printf '%s' "$UPLOAD_SECRET" | npx wrangler secret put UPLOAD_SECRET
+echo ""
+
 # Build and deploy
 echo ""
 echo "Building and deploying..."
@@ -91,7 +100,8 @@ echo ""
 echo "=== Auto-Deploy (Optional) ==="
 echo ""
 echo "To auto-deploy on every push to main, add these GitHub repo secrets:"
-echo "  CLOUDFLARE_API_TOKEN  — Create at https://dash.cloudflare.com/profile/api-tokens"
-echo "  CLOUDFLARE_ACCOUNT_ID — Found in your Cloudflare dashboard sidebar"
+echo "  CLOUDFLARE_API_TOKEN       — Create at https://dash.cloudflare.com/profile/api-tokens"
+echo "  CLOUDFLARE_ACCOUNT_ID      — Found in your Cloudflare dashboard sidebar"
+echo "  CLOUDFLARE_KV_NAMESPACE_ID — The KV namespace ID printed above"
 echo ""
 echo "Then every merge to main will deploy automatically via GitHub Actions."
