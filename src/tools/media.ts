@@ -81,11 +81,13 @@ export function registerMediaTools(server: McpServer, client: EBirdClient) {
       // Sort by fewest media
       results.sort((a, b) => a.totalMedia - b.totalMedia);
 
+      const fmt = (n: number) => n >= 100 ? "100+" : String(n);
+
       const top = results.slice(0, 30);
       const text = top
         .map(
           (r, i) =>
-            `${i + 1}. ${r.comName} (${r.sciName}) [${r.speciesCode}]\n   ${r.macaulay.photo} photos, ${r.macaulay.audio} audio, ${r.macaulay.video} video | Total: ${r.totalMedia}`
+            `${i + 1}. ${r.comName} (${r.sciName}) [${r.speciesCode}]\n   ${fmt(r.macaulay.photo)} photos, ${fmt(r.macaulay.audio)} audio, ${fmt(r.macaulay.video)} video | Total: ${fmt(r.totalMedia)}`
         )
         .join("\n");
 
