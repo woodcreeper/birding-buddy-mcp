@@ -16,7 +16,7 @@ export function registerXenoCantoTools(
     {
       speciesName: z
         .string()
-        .describe("English name or scientific name of the species"),
+        .describe("Scientific name of the species (e.g., 'Cardinalis cardinalis'). Common names will not work."),
       country: z
         .string()
         .optional()

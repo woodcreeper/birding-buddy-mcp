@@ -7,9 +7,17 @@ export interface MediaCounts {
   total: number;
 }
 
+export interface MacaulayFilters {
+  age?: string;
+  sex?: string;
+  tag?: string;
+  qualityAbove?: number;
+}
+
 export async function getMediaCounts(
   taxonCode: string,
-  regionCode?: string
+  regionCode?: string,
+  filters?: MacaulayFilters
 ): Promise<MediaCounts> {
   const counts: MediaCounts = { photo: 0, audio: 0, video: 0, total: 0 };
 
@@ -17,18 +25,30 @@ export async function getMediaCounts(
     const params = new URLSearchParams({
       taxonCode,
       mediaType,
-      count: "1",
+      count: "100",
     });
     if (regionCode) {
       params.set("regionCode", regionCode);
+    }
+    if (filters?.age) {
+      params.set("age", filters.age);
+    }
+    if (filters?.sex) {
+      params.set("sex", filters.sex);
+    }
+    if (filters?.tag) {
+      params.set("tag", filters.tag);
+    }
+    if (filters?.qualityAbove !== undefined) {
+      params.set("qua", String(filters.qualityAbove));
     }
 
     try {
       const response = await fetch(`${MACAULAY_BASE}?${params}`);
       if (!response.ok) continue;
 
-      const data = await response.json() as { results: { count: number } };
-      const count = data.results?.count ?? 0;
+      const data = await response.json() as { results: { content?: unknown[] } };
+      const count = data.results?.content?.length ?? 0;
       counts[mediaType] = count;
       counts.total += count;
     } catch {

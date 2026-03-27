@@ -10,12 +10,13 @@ import { registerCompoundTools } from "./tools/compound.js";
 import { registerMediaTools } from "./tools/media.js";
 import { registerFrequencyTools } from "./tools/frequency.js";
 import { registerXenoCantoTools } from "./tools/xeno-canto.js";
-import { BIRDING_BUDDY_INSTRUCTIONS } from "./prompts/birding-buddy.js";
+import { getBirdingBuddyInstructions } from "./prompts/birding-buddy.js";
 
 export function createServer(apiKey: string, xcApiKey: string | undefined, lifeListStore: LifeListStore): McpServer {
+  const instructions = getBirdingBuddyInstructions(!!xcApiKey);
   const server = new McpServer(
     { name: "birding-buddy-mcp", version: "1.0.0" },
-    { instructions: BIRDING_BUDDY_INSTRUCTIONS }
+    { instructions }
   );
 
   const client = new EBirdClient(apiKey);
@@ -49,7 +50,7 @@ export function createServer(apiKey: string, xcApiKey: string | undefined, lifeL
           role: "user" as const,
           content: {
             type: "text" as const,
-            text: BIRDING_BUDDY_INSTRUCTIONS,
+            text: instructions,
           },
         },
       ],
