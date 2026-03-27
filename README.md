@@ -2,7 +2,7 @@
 
 Your AI-powered birding companion. A TypeScript [MCP](https://modelcontextprotocol.io/) server that connects Claude to the [eBird API](https://documenter.getpostman.com/view/664302/S1ENwy59) and [Xeno-canto](https://xeno-canto.org/) — with personal intelligence like life list tracking, route-based hotspot discovery, and Xeno-canto recording enrichment.
 
-**22 tools** across 5 categories: core eBird API, life list management, compound intelligence, Xeno-canto enrichment, and utilities.
+**23 tools** across 5 categories: core eBird API, life list management, compound intelligence, Xeno-canto enrichment, and utilities.
 
 The server includes a **Birding Buddy** persona — always-active instructions that tell Claude how to route your questions to the right tools, group results by bird category, highlight rarities, and offer recording gap analysis when relevant. Just talk naturally.
 
