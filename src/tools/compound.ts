@@ -135,20 +135,23 @@ export function registerCompoundTools(server: McpServer, client: EBirdClient, st
       const interval = waypointInterval ?? 20;
       let waypoints: [number, number][];
       let routeInfo = "";
+      const errors: string[] = [];
 
       try {
         const route = await getRoute(startLng, startLat, endLng, endLat);
         waypoints = sampleWaypoints(route.coordinates, interval);
         routeInfo = `Route: ${route.totalDistanceKm.toFixed(1)} km, ~${route.totalDurationMin.toFixed(0)} min drive\n`;
-      } catch {
+      } catch (err) {
         // Fallback to straight-line sampling
         waypoints = sampleStraightLine(startLat, startLng, endLat, endLng, 50);
         routeInfo = "Note: Using straight-line estimation (routing service unavailable)\n";
+        errors.push(`OSRM routing: ${err instanceof Error ? err.message : String(err)}`);
       }
 
       // Query hotspots at each waypoint, deduplicate
       const seenLocIds = new Set<string>();
       const allHotspots: Hotspot[] = [];
+      let waypointFailures = 0;
 
       for (const [lat, lng] of waypoints) {
         try {
@@ -160,16 +163,24 @@ export function registerCompoundTools(server: McpServer, client: EBirdClient, st
             }
           }
         } catch {
-          // Skip waypoints that fail
+          waypointFailures++;
         }
+      }
+
+      if (waypointFailures > 0) {
+        errors.push(`eBird hotspot queries: ${waypointFailures} of ${waypoints.length} waypoints failed`);
       }
 
       // Sort by species richness
       allHotspots.sort((a, b) => (b.numSpeciesAllTime ?? 0) - (a.numSpeciesAllTime ?? 0));
 
+      const errorNote = errors.length > 0
+        ? `\n\n--- API Errors ---\n${errors.map((e) => `  ⚠ ${e}`).join("\n")}`
+        : "";
+
       if (allHotspots.length === 0) {
         return {
-          content: [{ type: "text", text: `${routeInfo}No hotspots found along this route.` }],
+          content: [{ type: "text", text: `${routeInfo}No hotspots found along this route.${errorNote}` }],
         };
       }
 
@@ -185,7 +196,7 @@ export function registerCompoundTools(server: McpServer, client: EBirdClient, st
         content: [
           {
             type: "text",
-            text: `${routeInfo}${waypoints.length} waypoints sampled, ${allHotspots.length} unique hotspots found:\n\n${text}${allHotspots.length > 30 ? `\n\n... and ${allHotspots.length - 30} more.` : ""}`,
+            text: `${routeInfo}${waypoints.length} waypoints sampled, ${allHotspots.length} unique hotspots found:\n\n${text}${allHotspots.length > 30 ? `\n\n... and ${allHotspots.length - 30} more.` : ""}${errorNote}`,
           },
         ],
       };

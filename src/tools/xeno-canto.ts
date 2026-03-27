@@ -86,19 +86,27 @@ export function registerXenoCantoTools(
         xcTotal: number;
         xcGrades: { A: number; B: number; C: number; D: number; E: number };
       }> = [];
+      const errors: Array<{ species: string; error: string }> = [];
 
       for (const sp of species) {
-        const counts = await getRecordingCounts(
-          xcApiKey,
-          sp.scientificName,
-          country
-        );
+        try {
+          const counts = await getRecordingCounts(
+            xcApiKey,
+            sp.scientificName,
+            country
+          );
 
-        enriched.push({
-          ...sp,
-          xcTotal: counts.total,
-          xcGrades: counts.grades,
-        });
+          enriched.push({
+            ...sp,
+            xcTotal: counts.total,
+            xcGrades: counts.grades,
+          });
+        } catch (err) {
+          errors.push({
+            species: sp.scientificName,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
 
         await sleep(200); // Respect rate limits
       }
@@ -113,11 +121,19 @@ export function registerXenoCantoTools(
         )
         .join("\n");
 
+      let errorNote = "";
+      if (errors.length > 0) {
+        const errorLines = errors
+          .map((e) => `  ⚠ ${e.species}: ${e.error}`)
+          .join("\n");
+        errorNote = `\n\n--- API Errors (${errors.length} of ${species.length} species failed) ---\n${errorLines}`;
+      }
+
       return {
         content: [
           {
             type: "text",
-            text: `Xeno-canto recording counts for ${enriched.length} species${country ? ` in ${country}` : ""}, sorted by fewest A-grade recordings:\n\n${text}`,
+            text: `Xeno-canto recording counts for ${enriched.length} species${country ? ` in ${country}` : ""}, sorted by fewest A-grade recordings:\n\n${text}${errorNote}`,
           },
         ],
       };
