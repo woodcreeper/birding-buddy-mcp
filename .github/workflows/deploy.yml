@@ -1,0 +1,42 @@
+name: Deploy to Cloudflare Workers
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build:worker
+
+      - name: Generate wrangler.toml
+        env:
+          KV_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}
+        run: |
+          cat > wrangler.toml << EOF
+          name = "birding-buddy"
+          main = "dist/worker.js"
+          compatibility_date = "2025-01-01"
+          compatibility_flags = ["nodejs_compat"]
+
+          [[kv_namespaces]]
+          binding = "LIFE_LIST_KV"
+          id = "${KV_NAMESPACE_ID}"
+          EOF
+
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
