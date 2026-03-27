@@ -28,7 +28,8 @@ export async function getRecordingCounts(
   speciesName: string,
   country?: string
 ): Promise<RecordingCounts> {
-  let query = speciesName;
+  // XC v3 requires tagged queries — use sp: for scientific names
+  let query = `sp:"${speciesName}"`;
   if (country) {
     query += ` cnt:"${country}"`;
   }

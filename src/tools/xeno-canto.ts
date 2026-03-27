@@ -88,25 +88,16 @@ export function registerXenoCantoTools(
       }> = [];
 
       for (const sp of species) {
-        let xcTotal = 0;
-        let xcGrades = { A: 0, B: 0, C: 0, D: 0, E: 0 };
-
-        try {
-          const counts = await getRecordingCounts(
-            xcApiKey,
-            sp.scientificName,
-            country
-          );
-          xcTotal = counts.total;
-          xcGrades = counts.grades;
-        } catch {
-          // Species not found or API error — treat as zero recordings
-        }
+        const counts = await getRecordingCounts(
+          xcApiKey,
+          sp.scientificName,
+          country
+        );
 
         enriched.push({
           ...sp,
-          xcTotal,
-          xcGrades,
+          xcTotal: counts.total,
+          xcGrades: counts.grades,
         });
 
         await sleep(200); // Respect rate limits
