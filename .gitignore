@@ -4,3 +4,5 @@ dist/
 .env
 *.js.map
 wrangler.toml
+.claude/
+HANDOFF.md
