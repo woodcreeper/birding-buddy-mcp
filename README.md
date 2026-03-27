@@ -8,42 +8,66 @@ The server includes a **Birding Buddy** persona — always-active instructions t
 
 ---
 
-## Why build this?
+## Quick Deploy — Cloudflare Workers (Recommended)
 
-Existing eBird MCP servers are thin API wrappers — they give Claude access to eBird data, but they don't know anything about *you*. This server adds a personal layer:
+Deploy your own Birding Buddy server in under 5 minutes. Works with Claude Desktop, Claude.ai, and the Claude mobile app — your life list syncs across all of them.
 
-- **Your life list** — imported from eBird's CSV export, so every query can filter for species you haven't seen
-- **Route intelligence** — finds birding hotspots along a driving route, not just near a single point
-- **Media gap discovery** — surfaces species with the fewest photos and recordings, so you can contribute where it matters most
-- **Recording enrichment** — checks Xeno-canto for species with the fewest quality recordings, so you can target your sound recording efforts
+### What you'll need
 
-The eBird API provides the raw data. Claude provides the intelligence — it already knows which species are endemic, how to prioritize a birding itinerary, and how to reason about detection probability. This server bridges the two.
+- A free [Cloudflare account](https://dash.cloudflare.com/sign-up)
+- An **eBird API key** (free, instant) — [ebird.org/api/keygen](https://ebird.org/api/keygen)
+- A **Xeno-canto API key** (optional, free) — register at [xeno-canto.org](https://xeno-canto.org), verify your email, find your key on your account page
+
+### Deploy
+
+```bash
+git clone https://github.com/woodcreeper/birding-buddy-mcp.git
+cd birding-buddy-mcp
+npm install
+./deploy.sh
+```
+
+The deploy script will:
+1. Log you into Cloudflare (if needed)
+2. Create a KV namespace for your life list
+3. Prompt for your eBird and Xeno-canto API keys (stored as Cloudflare secrets — never in code)
+4. Build and deploy the Worker
+
+When it finishes, you'll see your server URL:
+
+```
+https://birding-buddy.<your-subdomain>.workers.dev/mcp
+```
+
+### Connect to Claude
+
+**Claude Desktop / Claude.ai / Claude mobile:**
+
+Add your server URL as a remote MCP server:
+1. Open Claude → Settings → MCP Servers (or Integrations)
+2. Add a new server with the URL from the deploy step
+3. That's it — Birding Buddy tools appear automatically
+
+### Import your life list
+
+1. Go to [ebird.org/lifelist](https://ebird.org/lifelist)
+2. Click **Download (CSV)**
+3. In Claude, say: *"Import my eBird life list"* and paste the CSV content
+
+Your life list is stored in your own Cloudflare KV namespace — private to you, synced across all your devices.
 
 ---
 
-## Setup
+## Local Setup (Claude Desktop only)
+
+If you prefer to run the server locally instead of on Cloudflare:
 
 ### 1. Get your API keys
 
-- **eBird API key** (required) — go to [ebird.org/api/keygen](https://ebird.org/api/keygen) and request a key (free, instant).
-- **Xeno-canto API key** (optional) — register at [xeno-canto.org](https://xeno-canto.org), verify your email, then find your key on your account page. Enables recording gap analysis.
+- **eBird API key** (required) — [ebird.org/api/keygen](https://ebird.org/api/keygen)
+- **Xeno-canto API key** (optional) — [xeno-canto.org](https://xeno-canto.org)
 
-### 2. Configure environment
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and add your keys:
-
-```
-EBIRD_API_KEY=your-ebird-key-here
-XC_API_KEY=your-xeno-canto-key-here
-```
-
-The Xeno-canto key is optional — if omitted, all eBird tools work normally but the Xeno-canto enrichment tools will return a helpful error message.
-
-### 3. Clone and build
+### 2. Clone and build
 
 ```bash
 git clone https://github.com/woodcreeper/birding-buddy-mcp.git
@@ -52,7 +76,7 @@ npm install
 npm run build
 ```
 
-### 4. Add to Claude Desktop
+### 3. Add to Claude Desktop
 
 Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -73,15 +97,27 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 Restart Claude Desktop after saving.
 
-### 5. Import your life list
+### 4. Import your life list
 
-1. Go to [My eBird → Download My Data](https://ebird.org/downloadMyData)
-2. Download the CSV file
-3. Open Claude Desktop and say:
+1. Go to [ebird.org/lifelist](https://ebird.org/lifelist) and click **Download (CSV)**
+2. In Claude, say:
 
-> Import my eBird life list from `/Users/you/Downloads/MyEBirdData.csv`
+> Import my eBird life list from `/Users/you/Downloads/ebird_world_life_list.csv`
 
-You'll see a confirmation with your total species count and number of countries.
+Your life list is stored locally at `~/.ebird-mcp/life-list.json` and persists across Claude sessions.
+
+---
+
+## Why build this?
+
+Existing eBird MCP servers are thin API wrappers — they give Claude access to eBird data, but they don't know anything about *you*. This server adds a personal layer:
+
+- **Your life list** — imported from eBird's CSV export, so every query can filter for species you haven't seen
+- **Route intelligence** — finds birding hotspots along a driving route, not just near a single point
+- **Media gap discovery** — surfaces species with the fewest photos and recordings, so you can contribute where it matters most
+- **Recording enrichment** — checks Xeno-canto for species with the fewest quality recordings, so you can target your sound recording efforts
+
+The eBird API provides the raw data. Claude provides the intelligence — it already knows which species are endemic, how to prioritize a birding itinerary, and how to reason about detection probability. This server bridges the two.
 
 ---
 
@@ -91,81 +127,21 @@ Your life list is what makes this server different from every other eBird tool. 
 
 ### How it works
 
-1. **Import once** — the `import_life_list` tool parses your eBird CSV and stores it locally at `~/.ebird-mcp/life-list.json`. This file persists across Claude sessions. You don't need to re-import every time you open Claude.
+1. **Import once** — the `import_life_list` tool parses your eBird life list CSV. On Cloudflare, it's stored in your personal KV namespace. Locally, it's saved at `~/.ebird-mcp/life-list.json`. Either way, it persists across sessions — you don't need to re-import every time.
 
 2. **Automatic filtering** — the compound tools (`get_life_list_gaps_nearby`, `get_life_list_gaps_at_hotspot`) automatically cross-reference live eBird observations against your life list. Species you've already seen are filtered out; what remains are your potential lifers, ranked by how frequently they're being reported.
 
-3. **Re-import to refresh** — after a trip where you added new species, re-download your CSV from eBird and re-import. The new file overwrites the old one. Your life list is always as current as your last import.
-
-### What's in the CSV?
-
-eBird's "Download My Data" CSV contains every observation you've ever submitted: species, date, location, count, and more. The server extracts the unique species and keeps the earliest observation date for each — that's your life list. It deduplicates by scientific name, so subspecies and regional forms are handled correctly.
+3. **Re-import to refresh** — after a trip where you added new species, re-download your CSV from eBird and re-import. The new file overwrites the old one.
 
 ### What you can ask
 
 | Question | What happens |
 |----------|-------------|
 | "What lifers can I get near me?" | Queries nearby observations, filters against your life list, ranks by report frequency |
-| "Is Resplendent Quetzal on my life list?" | Looks up the species by scientific name in your local data |
+| "Is Resplendent Quetzal on my life list?" | Looks up the species by scientific name |
 | "How many species have I seen?" | Summarizes your list with breakdowns by country and year |
 | "What haven't I seen at this hotspot?" | Gets recent observations at the hotspot, removes species you've seen |
 | "What new birds could I find on my drive from A to B?" | Finds hotspots along the route, then filters each for your life list gaps |
-
-### Life list data stays local
-
-Your life list never leaves your machine. It's stored as a JSON file in `~/.ebird-mcp/` and is only read by the MCP server running on your computer. No data is sent to any external service — the eBird API is only queried for *public* observation data, never your personal data.
-
----
-
-## Media Gap Discovery — Macaulay Library
-
-The `get_media_gaps` tool helps you find species that are under-documented — the ones with the fewest photos, audio recordings, or videos. This is for birders who want to *contribute*, not just consume.
-
-**Important:** This tool is most useful for under-birded regions (e.g., MX-ROO, small island nations). For well-birded regions like the US or UK, the results are meaningless since virtually all species have extensive media coverage.
-
-### How it works
-
-1. **Gets the species list** for your chosen region from the eBird API
-2. **Queries Macaulay Library** for each species — counts photos, audio recordings, and videos using the same `taxonCode` that eBird uses
-3. **Sorts** results by total media count, ascending — species with the least coverage float to the top
-
-### Rate limiting and performance
-
-- **Macaulay Library** — ~2-3 requests/sec (the API is undocumented but stable; we're conservative)
-
-For the default 50 species, this takes about **20 seconds**. You can increase `maxSpecies` up to 200, but expect 1-2 minutes for larger queries.
-
-### Fallback behavior
-
-Macaulay Library's API is undocumented — it works reliably today, but there's no official stability guarantee. If it goes down, the tool will return an error rather than silent empty results.
-
----
-
-## Xeno-canto Recording Enrichment
-
-After Claude presents a species list from any observation query, it will offer to check Xeno-canto for recording gaps. This two-stage workflow keeps initial queries fast and respects Xeno-canto's API.
-
-### How it works
-
-1. Claude presents a species list (from `get_nearby_observations`, `get_life_list_gaps_nearby`, etc.)
-2. Claude asks: *"Want me to check which of these have the fewest quality recordings on Xeno-canto?"*
-3. If you say yes, it calls `enrich_species_list` — which queries Xeno-canto for each species and returns them sorted by fewest A-grade recordings
-4. The top recording targets are presented with quality grade breakdowns (A through E)
-
-### What you can ask
-
-| Question | What happens |
-|----------|-------------|
-| "Yes, check Xeno-canto" (after a species list) | Enriches the list with XC recording counts, sorted by contribution priority |
-| "How many recordings does [species] have?" | Calls `get_recording_counts` for a single species |
-
-### Rate limiting
-
-Xeno-canto is queried at ~5 requests/sec (200ms delay between calls). For 50 species, expect about 10 seconds. The tool warns you before processing large lists.
-
-### API key required
-
-Xeno-canto enrichment requires an API key (free with a verified account). See [Setup](#setup) for configuration. If the key is not configured, the enrichment tools return a helpful error message — all other tools continue working normally.
 
 ---
 
@@ -312,7 +288,7 @@ These are real things you can say to Claude once the server is running. Claude w
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
-| `import_life_list` | Import your eBird CSV export | `csvPath` |
+| `import_life_list` | Import your eBird life list CSV | `csvPath` or `csvContent` |
 | `check_life_list` | Check if a species is on your list | `scientificName` |
 | `get_life_list_stats` | Summary: total species, by country, by year | — |
 
@@ -344,12 +320,12 @@ These are real things you can say to Claude once the server is running. Claude w
 ## How It Works
 
 ```
-You → Claude Desktop → MCP Protocol → birding-buddy-mcp server
-                                          ├── eBird API 2.0 (observations, hotspots, taxonomy)
-                                          ├── OSRM (driving routes)
-                                          ├── Macaulay Library (photo/audio/video counts)
-                                          ├── Xeno-canto API v3 (recording counts by quality grade)
-                                          └── Local life list (~/.ebird-mcp/life-list.json)
+You → Claude → MCP Protocol → Birding Buddy server (local or Cloudflare Worker)
+                                   ├── eBird API 2.0 (observations, hotspots, taxonomy)
+                                   ├── OSRM (driving routes)
+                                   ├── Macaulay Library (photo/audio/video counts)
+                                   ├── Xeno-canto API v3 (recording counts by quality grade)
+                                   └── Your life list (Cloudflare KV or local JSON file)
 ```
 
 The server handles all API calls and data plumbing. Claude handles the intelligence — it knows endemic species, understands birding priorities, and can synthesize data from multiple tools into trip plans and recommendations.
@@ -364,10 +340,6 @@ The **Birding Buddy** persona (delivered via MCP server instructions) tells Clau
 | [OSRM](http://project-osrm.org/) | Driving route calculation | None | Fair use (public demo server) |
 | [Macaulay Library](https://www.macaulaylibrary.org/) | Media asset counts | None | ~2-3 req/sec |
 | [Xeno-canto API v3](https://xeno-canto.org/explore/api) | Recording counts by quality grade | API key | Fair use |
-
-### Life List Storage
-
-Your life list is stored locally at `~/.ebird-mcp/life-list.json`. It's a JSON file keyed by scientific name, containing common name, first observation date, and country. Re-import anytime to refresh.
 
 ---
 
@@ -388,17 +360,20 @@ Don't know the code? Use the `resolve_region_code` tool — just say "What's the
 ## Development
 
 ```bash
-npm install          # Install dependencies
-npm run build        # Compile TypeScript
-npm run dev          # Watch mode (recompiles on save)
-npm start            # Run the server (needs EBIRD_API_KEY env var)
+npm install              # Install dependencies
+npm run build            # Compile TypeScript (local server)
+npm run build:worker     # Compile TypeScript (Cloudflare Worker)
+npm run dev              # Watch mode (recompiles on save)
+npm run deploy           # Build worker + deploy to Cloudflare
+npm start                # Run locally (needs EBIRD_API_KEY env var)
 ```
 
 ### Project Structure
 
 ```
 src/
-├── index.ts              # Entry point (stdio transport)
+├── index.ts              # Local entry point (stdio transport)
+├── worker.ts             # Cloudflare Worker entry point
 ├── server.ts             # MCP server setup, registers all tools
 ├── clients/
 │   ├── ebird.ts          # eBird API 2.0 client (typed)
@@ -408,7 +383,9 @@ src/
 ├── prompts/
 │   └── birding-buddy.ts  # Birding Buddy persona instructions
 ├── data/
-│   └── life-list.ts      # Life list CSV import and storage
+│   ├── life-list.ts      # Life list CSV parsing and core logic
+│   ├── local-store.ts    # Local filesystem storage (~/.ebird-mcp/)
+│   └── kv-store.ts       # Cloudflare KV storage
 ├── tools/
 │   ├── observations.ts   # 7 observation tools
 │   ├── hotspots.ts       # 3 hotspot tools

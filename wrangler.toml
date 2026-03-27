@@ -1,0 +1,8 @@
+name = "birding-buddy"
+main = "dist/worker.js"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[kv_namespaces]]
+binding = "LIFE_LIST_KV"
+id = "c63c7034400e432f9cec2ab115ccb640"
