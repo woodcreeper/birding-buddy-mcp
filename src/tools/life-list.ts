@@ -71,9 +71,9 @@ export function registerLifeListTools(server: McpServer, store: LifeListStore, h
 
   server.tool(
     "check_life_list",
-    "Check if a species is on your life list",
+    "Check if a species is on your life list. Returns first observation date and country if found.",
     {
-      scientificName: z.string().describe("Scientific name of the species (e.g., 'Haliaeetus leucocephalus')"),
+      scientificName: z.string().describe("Scientific name or common name of the species (e.g., 'Haliaeetus leucocephalus' or 'Bald Eagle')"),
     },
     async ({ scientificName }) => {
       const loaded = await isLifeListLoaded(store);
@@ -112,7 +112,7 @@ export function registerLifeListTools(server: McpServer, store: LifeListStore, h
 
   server.tool(
     "get_life_list_stats",
-    "Get summary statistics about your life list — total species, by country, by year",
+    "Get summary statistics about your life list — total species count, breakdown by country, and breakdown by year of first observation",
     {},
     async () => {
       const stats = await getLifeListStats(store);

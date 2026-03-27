@@ -83,12 +83,19 @@ export async function importLifeList(
 }
 
 export async function checkLifeList(
-  scientificName: string,
+  name: string,
   store: LifeListStore
 ): Promise<LifeListEntry | null> {
   const data = await store.load();
   if (!data) return null;
-  return data.species[scientificName] ?? null;
+  // Try scientific name key first (fast path)
+  if (data.species[name]) return data.species[name];
+  // Fall back to case-insensitive common name search
+  const lower = name.toLowerCase();
+  for (const entry of Object.values(data.species)) {
+    if (entry.commonName.toLowerCase() === lower) return entry;
+  }
+  return null;
 }
 
 export async function getLifeListStats(store: LifeListStore): Promise<{
