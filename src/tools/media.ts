@@ -2,7 +2,6 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { EBirdClient } from "../clients/ebird.js";
 import { getMediaCounts, type MediaCounts } from "../clients/macaulay.js";
-import { getRecordingCount } from "../clients/xeno-canto.js";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -11,9 +10,9 @@ function sleep(ms: number): Promise<void> {
 export function registerMediaTools(server: McpServer, client: EBirdClient) {
   server.tool(
     "get_media_gaps",
-    "Find species with the fewest recordings/photos in a region — great for finding contribution opportunities. Queries Macaulay Library and Xeno-canto.",
+    "Find species with the fewest regional media records — useful only for under-birded regions (e.g. MX-ROO, small islands). Avoid for well-birded regions like US where results are meaningless. Queries Macaulay Library only.",
     {
-      regionCode: z.string().describe("eBird region code (e.g., US-NY, MX-ROO)"),
+      regionCode: z.string().describe("eBird region code (e.g., MX-ROO, CU, HN). Best for under-birded regions."),
       maxSpecies: z.number().min(1).max(200).optional().describe("Max species to check (default 50, max 200). Higher = slower."),
       mediaType: z.enum(["all", "audio", "photo", "video"]).optional().describe("Type of media to check (default 'all')"),
     },
@@ -34,7 +33,6 @@ export function registerMediaTools(server: McpServer, client: EBirdClient) {
         comName: string;
         sciName: string;
         macaulay: MediaCounts;
-        xenoCanto: number;
         totalMedia: number;
       }> = [];
 
@@ -43,7 +41,6 @@ export function registerMediaTools(server: McpServer, client: EBirdClient) {
         if (!taxon) continue;
 
         let macaulay: MediaCounts = { photo: 0, audio: 0, video: 0, total: 0 };
-        let xcCount = 0;
 
         try {
           macaulay = await getMediaCounts(code, regionCode);
@@ -52,22 +49,15 @@ export function registerMediaTools(server: McpServer, client: EBirdClient) {
           // Macaulay fallback: skip
         }
 
-        try {
-          xcCount = await getRecordingCount(taxon.sciName);
-          await sleep(400); // ~2.5 req/sec for Xeno-canto
-        } catch {
-          // Xeno-canto fallback: skip
-        }
-
         let total: number;
         if (type === "audio") {
-          total = macaulay.audio + xcCount;
+          total = macaulay.audio;
         } else if (type === "photo") {
           total = macaulay.photo;
         } else if (type === "video") {
           total = macaulay.video;
         } else {
-          total = macaulay.total + xcCount;
+          total = macaulay.total;
         }
 
         results.push({
@@ -75,7 +65,6 @@ export function registerMediaTools(server: McpServer, client: EBirdClient) {
           comName: taxon.comName,
           sciName: taxon.sciName,
           macaulay,
-          xenoCanto: xcCount,
           totalMedia: total,
         });
       }
@@ -87,7 +76,7 @@ export function registerMediaTools(server: McpServer, client: EBirdClient) {
       const text = top
         .map(
           (r, i) =>
-            `${i + 1}. ${r.comName} (${r.sciName}) [${r.speciesCode}]\n   Macaulay: ${r.macaulay.photo} photos, ${r.macaulay.audio} audio, ${r.macaulay.video} video | Xeno-canto: ${r.xenoCanto} recordings | Total: ${r.totalMedia}`
+            `${i + 1}. ${r.comName} (${r.sciName}) [${r.speciesCode}]\n   ${r.macaulay.photo} photos, ${r.macaulay.audio} audio, ${r.macaulay.video} video | Total: ${r.totalMedia}`
         )
         .join("\n");
 
