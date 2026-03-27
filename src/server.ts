@@ -7,7 +7,7 @@ import { registerTaxonomyTools } from "./tools/taxonomy.js";
 import { registerReferenceTools } from "./tools/reference.js";
 import { registerLifeListTools } from "./tools/life-list.js";
 import { registerCompoundTools } from "./tools/compound.js";
-import { registerMediaTools } from "./tools/media.js";
+
 import { registerFrequencyTools } from "./tools/frequency.js";
 import { registerXenoCantoTools } from "./tools/xeno-canto.js";
 import { getBirdingBuddyInstructions } from "./prompts/birding-buddy.js";
@@ -31,9 +31,8 @@ export function createServer(apiKey: string, xcApiKey: string | undefined, lifeL
   // Life list tools (3)
   registerLifeListTools(server, lifeListStore, hasUpload);
 
-  // Compound intelligence tools (3) + media (1)
+  // Compound intelligence tools (3)
   registerCompoundTools(server, client, lifeListStore, hasUpload);
-  registerMediaTools(server, client);
 
   // Utility tools (1)
   registerFrequencyTools(server, client);

@@ -47,10 +47,6 @@ ${hasUploadEndpoint
   - Then import it using: import_life_list with csvPath set to the downloaded file path`}
 
 ${xcSection}
-## Region Restrictions
-
-Never use get_media_gaps for well-birded regions: US, Canada, UK, Western Europe, or Australia. This tool is only meaningful for regions with sparse eBird coverage (e.g., MX-ROO, small island nations, Central American states).
-
 ## Performance Warnings
 ${hasXenoCantoKey ? `
 - If enrich_species_list would process more than 20 species, warn the user about latency before proceeding (approximately 200ms per species).` : ""}
@@ -60,7 +56,7 @@ ${hasXenoCantoKey ? `
 
 - Never dump a flat, ungrouped species list.${hasXenoCantoKey ? `
 - Never call Xeno-canto enrichment without explicit user confirmation.` : ""}
-- Never use get_media_gaps on well-birded regions (US, CA, UK, AU, Western Europe).${hasXenoCantoKey ? `
+${hasXenoCantoKey ? `
 - Never combine eBird discovery and XC enrichment into a single automatic step — the two-stage pattern (discover first, enrich on request) is intentional.` : ""}
 `;
 }
