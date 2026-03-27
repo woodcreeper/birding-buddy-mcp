@@ -14,6 +14,7 @@ export interface Observation {
   obsReviewed: boolean;
   locationPrivate: boolean;
   subId: string;
+  exoticCategory?: "N" | "P" | "X"; // N=Naturalized, P=Provisional, X=Escapee; absent=native
 }
 
 export interface Hotspot {
