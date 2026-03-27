@@ -1,11 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { EBirdClient, Observation, Hotspot } from "../clients/ebird.js";
+import type { LifeListStore } from "../data/life-list.js";
 import { getLifeListNames } from "../data/life-list.js";
 import { getRoute } from "../clients/osrm.js";
 import { sampleWaypoints, sampleStraightLine } from "../utils/geo.js";
 
-export function registerCompoundTools(server: McpServer, client: EBirdClient) {
+export function registerCompoundTools(server: McpServer, client: EBirdClient, store: LifeListStore) {
   server.tool(
     "get_life_list_gaps_nearby",
     "Find birds near you that you've NEVER seen — your potential lifers! Requires life list to be imported first.",
@@ -18,7 +19,7 @@ export function registerCompoundTools(server: McpServer, client: EBirdClient) {
     async ({ lat, lng, dist, back }) => {
       const [observations, lifeListNames] = await Promise.all([
         client.getNearbyObservations(lat, lng, { dist, back }),
-        getLifeListNames(),
+        getLifeListNames(store),
       ]);
 
       if (lifeListNames.size === 0) {
@@ -73,7 +74,7 @@ export function registerCompoundTools(server: McpServer, client: EBirdClient) {
       // The locId can be used as a region code for some endpoints
       const [observations, lifeListNames] = await Promise.all([
         client.getRecentObservations(locId, { back }),
-        getLifeListNames(),
+        getLifeListNames(store),
       ]);
 
       if (lifeListNames.size === 0) {

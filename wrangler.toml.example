@@ -1,0 +1,10 @@
+# Copy to wrangler.toml and fill in your KV namespace ID.
+# Or just run ./deploy.sh — it creates wrangler.toml automatically.
+name = "birding-buddy"
+main = "dist/worker.js"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[kv_namespaces]]
+binding = "LIFE_LIST_KV"
+id = "YOUR_KV_NAMESPACE_ID"

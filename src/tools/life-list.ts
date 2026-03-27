@@ -1,26 +1,47 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { LifeListStore } from "../data/life-list.js";
 import {
   importLifeList,
   checkLifeList,
   getLifeListStats,
+  isLifeListLoaded,
 } from "../data/life-list.js";
 
-export function registerLifeListTools(server: McpServer) {
+export function registerLifeListTools(server: McpServer, store: LifeListStore) {
   server.tool(
     "import_life_list",
-    "Import your eBird life list from a CSV export. Go to My eBird → Download My Data to get the file.",
+    "Import your eBird life list from a CSV export. Go to My eBird → Life List → Download (CSV) to get the file. Provide either a file path or paste the CSV content directly.",
     {
-      csvPath: z.string().describe("Absolute path to the eBird CSV export file"),
+      csvPath: z.string().optional().describe("Absolute path to the eBird CSV export file (local mode)"),
+      csvContent: z.string().optional().describe("Raw CSV content pasted directly (remote/cloud mode)"),
     },
-    async ({ csvPath }) => {
+    async ({ csvPath, csvContent }) => {
       try {
-        const result = await importLifeList(csvPath);
+        let content: string;
+        if (csvContent) {
+          content = csvContent;
+        } else if (csvPath) {
+          // Dynamic import so fs is not bundled in Cloudflare Worker builds
+          const fs = await import("fs");
+          content = fs.readFileSync(csvPath, "utf-8");
+        } else {
+          return {
+            content: [
+              {
+                type: "text",
+                text: "Please provide either a csvPath (file path) or csvContent (pasted CSV text).",
+              },
+            ],
+          };
+        }
+
+        const result = await importLifeList(content, store);
         return {
           content: [
             {
               type: "text",
-              text: `Life list imported successfully!\n${result.totalSpecies} species from ${result.countries} countries.\nStored at ~/.ebird-mcp/life-list.json`,
+              text: `Life list imported successfully!\n${result.totalSpecies} species from ${result.countries} countries.`,
             },
           ],
         };
@@ -44,7 +65,19 @@ export function registerLifeListTools(server: McpServer) {
       scientificName: z.string().describe("Scientific name of the species (e.g., 'Haliaeetus leucocephalus')"),
     },
     async ({ scientificName }) => {
-      const entry = await checkLifeList(scientificName);
+      const loaded = await isLifeListLoaded(store);
+      if (!loaded) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "No life list loaded. Import your life list first:\n1. Go to https://ebird.org/lifelist — click 'Download (CSV)'\n2. Then ask me to import it with the import_life_list tool.",
+            },
+          ],
+        };
+      }
+
+      const entry = await checkLifeList(scientificName, store);
       if (entry) {
         return {
           content: [
@@ -71,7 +104,7 @@ export function registerLifeListTools(server: McpServer) {
     "Get summary statistics about your life list — total species, by country, by year",
     {},
     async () => {
-      const stats = await getLifeListStats();
+      const stats = await getLifeListStats(store);
       if (stats.totalSpecies === 0) {
         return {
           content: [

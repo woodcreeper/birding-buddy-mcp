@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { EBirdClient } from "./clients/ebird.js";
+import type { LifeListStore } from "./data/life-list.js";
 import { registerObservationTools } from "./tools/observations.js";
 import { registerHotspotTools } from "./tools/hotspots.js";
 import { registerTaxonomyTools } from "./tools/taxonomy.js";
@@ -11,7 +12,7 @@ import { registerFrequencyTools } from "./tools/frequency.js";
 import { registerXenoCantoTools } from "./tools/xeno-canto.js";
 import { BIRDING_BUDDY_INSTRUCTIONS } from "./prompts/birding-buddy.js";
 
-export function createServer(apiKey: string, xcApiKey?: string): McpServer {
+export function createServer(apiKey: string, xcApiKey: string | undefined, lifeListStore: LifeListStore): McpServer {
   const server = new McpServer(
     { name: "birding-buddy-mcp", version: "1.0.0" },
     { instructions: BIRDING_BUDDY_INSTRUCTIONS }
@@ -26,10 +27,10 @@ export function createServer(apiKey: string, xcApiKey?: string): McpServer {
   registerReferenceTools(server, client);
 
   // Life list tools (3)
-  registerLifeListTools(server);
+  registerLifeListTools(server, lifeListStore);
 
   // Compound intelligence tools (3) + media (1)
-  registerCompoundTools(server, client);
+  registerCompoundTools(server, client, lifeListStore);
   registerMediaTools(server, client);
 
   // Utility tools (1)

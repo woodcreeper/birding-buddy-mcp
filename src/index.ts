@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createServer } from "./server.js";
+import { LocalLifeListStore } from "./data/local-store.js";
 
 const apiKey = process.env.EBIRD_API_KEY;
 if (!apiKey) {
@@ -19,6 +20,6 @@ if (!xcApiKey) {
   );
 }
 
-const server = createServer(apiKey, xcApiKey);
+const server = createServer(apiKey, xcApiKey, new LocalLifeListStore());
 const transport = new StdioServerTransport();
 await server.connect(transport);
