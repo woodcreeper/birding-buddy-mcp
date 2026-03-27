@@ -24,7 +24,7 @@ export function registerCompoundTools(server: McpServer, client: EBirdClient, st
 
       if (lifeListNames.size === 0) {
         return {
-          content: [{ type: "text", text: "No life list loaded. Use import_life_list first." }],
+          content: [{ type: "text", text: "No life list loaded. Visit this server's /upload page in your browser to upload your eBird CSV directly." }],
         };
       }
 
@@ -79,7 +79,7 @@ export function registerCompoundTools(server: McpServer, client: EBirdClient, st
 
       if (lifeListNames.size === 0) {
         return {
-          content: [{ type: "text", text: "No life list loaded. Use import_life_list first." }],
+          content: [{ type: "text", text: "No life list loaded. Visit this server's /upload page in your browser to upload your eBird CSV directly." }],
         };
       }
 

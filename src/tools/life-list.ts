@@ -71,7 +71,7 @@ export function registerLifeListTools(server: McpServer, store: LifeListStore) {
           content: [
             {
               type: "text",
-              text: "No life list loaded. Import your life list first:\n1. Go to https://ebird.org/lifelist — click 'Download (CSV)'\n2. Then ask me to import it with the import_life_list tool.",
+              text: "No life list loaded. Visit this server's /upload page in your browser to upload your eBird CSV directly.\nDownload your data from https://ebird.org/downloadMyData first.",
             },
           ],
         };
@@ -110,7 +110,7 @@ export function registerLifeListTools(server: McpServer, store: LifeListStore) {
           content: [
             {
               type: "text",
-              text: "No life list loaded. Use import_life_list to import your eBird data first.",
+              text: "No life list loaded. Visit this server's /upload page in your browser to upload your eBird CSV directly.\nDownload your data from https://ebird.org/downloadMyData first.",
             },
           ],
         };

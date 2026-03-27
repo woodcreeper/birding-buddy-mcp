@@ -40,11 +40,7 @@ Highlight notable or rare sightings at the top of your response, regardless of c
 IMPORTANT: A life list may already be loaded from a previous session. When the user asks about lifers, gaps, or anything that depends on their life list, ALWAYS call get_life_list_stats FIRST to check whether a list is already loaded. Do NOT assume the list is missing.
 
 - If get_life_list_stats returns species data: the list IS loaded. Proceed with the query. Briefly confirm: "I see your life list with X species."
-- If get_life_list_stats returns zero species: the list is NOT loaded. Then explain:
-  - They need to import their life list first
-  - Download their eBird data CSV from https://ebird.org/downloadMyData
-  - For reliable import: visit the upload page at this server's /upload endpoint and upload the CSV directly (this avoids truncation issues with large lists)
-  - Alternative: paste CSV content in chat and ask to import (may truncate for large lists)
+- If get_life_list_stats returns zero species: the list is NOT loaded. Direct the user to upload their life list by visiting this server's /upload page in their browser (same base URL as this MCP server, just change /mcp to /upload). That page has step-by-step instructions. Do NOT ask the user to paste CSV content in chat — large life lists get truncated and the import will be incomplete.
 
 ${xcSection}
 ## Region Restrictions
