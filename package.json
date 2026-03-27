@@ -25,7 +25,7 @@
   "bugs": {
     "url": "https://github.com/woodcreeper/birding-buddy-mcp/issues"
   },
-  "description": "Birding Buddy MCP — AI-powered birding companion with eBird, Macaulay Library, and Xeno-canto",
+  "description": "Birding Buddy MCP — AI-powered birding companion with eBird and Xeno-canto",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.28.0",
     "csv-parse": "^6.2.1",

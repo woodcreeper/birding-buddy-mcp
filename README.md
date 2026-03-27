@@ -1,8 +1,8 @@
 # Birding Buddy MCP
 
-Your AI-powered birding companion. A TypeScript [MCP](https://modelcontextprotocol.io/) server that connects Claude to the [eBird API](https://documenter.getpostman.com/view/664302/S1ENwy59), [Macaulay Library](https://www.macaulaylibrary.org/), and [Xeno-canto](https://xeno-canto.org/) — with personal intelligence like life list tracking, route-based hotspot discovery, media gap analysis, and Xeno-canto recording enrichment.
+Your AI-powered birding companion. A TypeScript [MCP](https://modelcontextprotocol.io/) server that connects Claude to the [eBird API](https://documenter.getpostman.com/view/664302/S1ENwy59) and [Xeno-canto](https://xeno-canto.org/) — with personal intelligence like life list tracking, route-based hotspot discovery, and Xeno-canto recording enrichment.
 
-**23 tools** across 5 categories: core eBird API, life list management, compound intelligence, Xeno-canto enrichment, and utilities.
+**22 tools** across 5 categories: core eBird API, life list management, compound intelligence, Xeno-canto enrichment, and utilities.
 
 The server includes a **Birding Buddy** persona — always-active instructions that tell Claude how to route your questions to the right tools, group results by bird category, highlight rarities, and offer recording gap analysis when relevant. Just talk naturally.
 
@@ -114,7 +114,6 @@ Existing eBird MCP servers are thin API wrappers — they give Claude access to 
 
 - **Your life list** — imported from eBird's CSV export, so every query can filter for species you haven't seen
 - **Route intelligence** — finds birding hotspots along a driving route, not just near a single point
-- **Media gap discovery** — surfaces species with the fewest photos and recordings, so you can contribute where it matters most
 - **Recording enrichment** — checks Xeno-canto for species with the fewest quality recordings, so you can target your sound recording efforts
 
 The eBird API provides the raw data. Claude provides the intelligence — it already knows which species are endemic, how to prioritize a birding itinerary, and how to reason about detection probability. This server bridges the two.
@@ -193,20 +192,6 @@ These are real things you can say to Claude once the server is running. Claude w
 > - American Flamingo (12 reports)
 > - Clapper Rail (3 reports)
 > - ...
-
-### Media Contribution — "Where can I contribute recordings?"
-
-> **You:** I'm doing sound recordings in Quintana Roo. What species here have the fewest media records?
->
-> **Claude:** *(calls `get_media_gaps` with regionCode MX-ROO, mediaType audio)*
->
-> Here are species in Quintana Roo with the fewest audio recordings:
->
-> 1. **Yucatan Poorwill** — 0 photos, 0 audio, 0 video | Total: 0
-> 2. **Cozumel Vireo** — 1 photo, 1 audio, 0 video | Total: 2
-> 3. ...
->
-> Want me to check which of these have the fewest quality recordings on Xeno-canto? I can flag the best targets for contributing new recordings.
 
 ### Life List Stats — "How am I doing?"
 
@@ -292,14 +277,13 @@ These are real things you can say to Claude once the server is running. Claude w
 | `check_life_list` | Check if a species is on your list | `scientificName` |
 | `get_life_list_stats` | Summary: total species, by country, by year | — |
 
-### Compound Intelligence (4 tools)
+### Compound Intelligence (3 tools)
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
 | `get_life_list_gaps_nearby` | Find potential lifers near your location | `lat`, `lng`, `dist`, `back` |
 | `get_life_list_gaps_at_hotspot` | Species at a hotspot not on your life list | `locId`, `back` |
 | `get_hotspots_along_route` | Birding stops along a driving route (uses OSRM) | `startLat/Lng`, `endLat/Lng`, `hotspotRadius` |
-| `get_media_gaps` | Species with fewest media records (Macaulay only, under-birded regions) | `regionCode`, `maxSpecies`, `mediaType` |
 
 ### Xeno-canto Enrichment (2 tools)
 
@@ -323,7 +307,6 @@ These are real things you can say to Claude once the server is running. Claude w
 You → Claude → MCP Protocol → Birding Buddy server (local or Cloudflare Worker)
                                    ├── eBird API 2.0 (observations, hotspots, taxonomy)
                                    ├── OSRM (driving routes)
-                                   ├── Macaulay Library (photo/audio/video counts)
                                    ├── Xeno-canto API v3 (recording counts by quality grade)
                                    └── Your life list (Cloudflare KV or local JSON file)
 ```
@@ -338,7 +321,6 @@ The **Birding Buddy** persona (delivered via MCP server instructions) tells Clau
 |-----|---------|------|-------------|
 | [eBird API 2.0](https://documenter.getpostman.com/view/664302/S1ENwy59) | Observations, hotspots, taxonomy | API key | ~200 req/hr |
 | [OSRM](http://project-osrm.org/) | Driving route calculation | None | Fair use (public demo server) |
-| [Macaulay Library](https://www.macaulaylibrary.org/) | Media asset counts | None | ~2-3 req/sec |
 | [Xeno-canto API v3](https://xeno-canto.org/explore/api) | Recording counts by quality grade | API key | Fair use |
 
 ---
@@ -378,7 +360,6 @@ src/
 ├── clients/
 │   ├── ebird.ts          # eBird API 2.0 client (typed)
 │   ├── osrm.ts           # OSRM routing client
-│   ├── macaulay.ts       # Macaulay Library search client
 │   └── xeno-canto.ts     # Xeno-canto API v3 client
 ├── prompts/
 │   └── birding-buddy.ts  # Birding Buddy persona instructions
@@ -393,7 +374,6 @@ src/
 │   ├── reference.ts      # 3 reference + region resolver tools
 │   ├── life-list.ts      # 3 life list tools
 │   ├── compound.ts       # 3 compound intelligence tools
-│   ├── media.ts          # 1 media gap tool
 │   ├── xeno-canto.ts     # 2 Xeno-canto enrichment tools
 │   └── frequency.ts      # 1 frequency estimation tool
 └── utils/
