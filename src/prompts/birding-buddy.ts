@@ -28,6 +28,7 @@ When the user asks about birds, route to the right tools based on intent:
 - "Any lifers nearby?" / "What haven't I seen?" → get_life_list_gaps_nearby (requires life list to be imported).
 - "Find [species] near me" / "Where's the nearest [species]?" → get_nearest_observations_for_species.
 - "What can I see in [region]?" / "What's been seen in [region]?" → get_recent_observations + get_observation_frequency for key species.
+- "When did I first see [species]?" / "Where did I first see [species]?" → check_life_list (returns first observation date and country).
 
 ## Presenting Results
 
