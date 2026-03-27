@@ -16,15 +16,6 @@ export interface LifeListStore {
   load(): Promise<LifeListData | null>;
 }
 
-// In-memory cache wrapping any store
-let cachedData: LifeListData | null = null;
-
-async function loadCached(store: LifeListStore): Promise<LifeListData | null> {
-  if (cachedData) return cachedData;
-  cachedData = await store.load();
-  return cachedData;
-}
-
 export function parseCsv(
   csvContent: string
 ): { species: Record<string, LifeListEntry>; countries: Set<string> } {
@@ -63,6 +54,14 @@ export function parseCsv(
         country,
       };
       countries.add(country);
+    } else if (firstObsDate && species[scientificName].firstObsDate) {
+      // Keep the earliest observation date
+      const existing = new Date(species[scientificName].firstObsDate);
+      const current = new Date(firstObsDate);
+      if (!isNaN(current.getTime()) && (isNaN(existing.getTime()) || current < existing)) {
+        species[scientificName].firstObsDate = firstObsDate;
+        species[scientificName].country = country;
+      }
     }
   }
 
@@ -76,7 +75,6 @@ export async function importLifeList(
   const { species, countries } = parseCsv(csvContent);
   const data: LifeListData = { species };
   await store.save(data);
-  cachedData = data;
 
   return {
     totalSpecies: Object.keys(species).length,
@@ -88,7 +86,7 @@ export async function checkLifeList(
   scientificName: string,
   store: LifeListStore
 ): Promise<LifeListEntry | null> {
-  const data = await loadCached(store);
+  const data = await store.load();
   if (!data) return null;
   return data.species[scientificName] ?? null;
 }
@@ -98,7 +96,7 @@ export async function getLifeListStats(store: LifeListStore): Promise<{
   byCountry: Record<string, number>;
   byYear: Record<string, number>;
 }> {
-  const data = await loadCached(store);
+  const data = await store.load();
   if (!data) {
     return { totalSpecies: 0, byCountry: {}, byYear: {} };
   }
@@ -128,14 +126,14 @@ export async function getLifeListStats(store: LifeListStore): Promise<{
 export async function isLifeListLoaded(
   store: LifeListStore
 ): Promise<boolean> {
-  const data = await loadCached(store);
+  const data = await store.load();
   return data !== null && Object.keys(data.species).length > 0;
 }
 
 export async function getLifeListNames(
   store: LifeListStore
 ): Promise<Set<string>> {
-  const data = await loadCached(store);
+  const data = await store.load();
   if (!data) return new Set();
   return new Set(Object.keys(data.species));
 }

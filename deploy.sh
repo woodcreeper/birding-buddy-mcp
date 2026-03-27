@@ -53,17 +53,19 @@ echo "=== API Keys ==="
 echo "Your API keys are stored as Cloudflare secrets — they never appear in code."
 echo ""
 
-read -p "eBird API key (required — get one at https://ebird.org/api/keygen): " EBIRD_KEY
+read -sp "eBird API key (required — get one at https://ebird.org/api/keygen): " EBIRD_KEY
+printf '\n'
 if [ -z "$EBIRD_KEY" ]; then
   echo "Error: eBird API key is required."
   exit 1
 fi
-echo "$EBIRD_KEY" | npx wrangler secret put EBIRD_API_KEY
+printf '%s' "$EBIRD_KEY" | npx wrangler secret put EBIRD_API_KEY
 echo ""
 
-read -p "Xeno-canto API key (optional — press Enter to skip): " XC_KEY
+read -sp "Xeno-canto API key (optional — press Enter to skip): " XC_KEY
+printf '\n'
 if [ -n "$XC_KEY" ]; then
-  echo "$XC_KEY" | npx wrangler secret put XC_API_KEY
+  printf '%s' "$XC_KEY" | npx wrangler secret put XC_API_KEY
   echo ""
 fi
 

@@ -1,4 +1,3 @@
-import fs from "fs";
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { LifeListStore } from "../data/life-list.js";
@@ -23,6 +22,8 @@ export function registerLifeListTools(server: McpServer, store: LifeListStore) {
         if (csvContent) {
           content = csvContent;
         } else if (csvPath) {
+          // Dynamic import so fs is not bundled in Cloudflare Worker builds
+          const fs = await import("fs");
           content = fs.readFileSync(csvPath, "utf-8");
         } else {
           return {

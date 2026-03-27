@@ -10,7 +10,7 @@ The server includes a **Birding Buddy** persona — always-active instructions t
 
 ## Quick Deploy — Cloudflare Workers (Recommended)
 
-Deploy your own Birding Buddy server in under 5 minutes. Works with Claude Desktop, Claude.ai, and the Claude mobile app — your life list syncs across all of them.
+Deploy your own Birding Buddy server in under 5 minutes. Works with Claude Desktop, Claude.ai, and the Claude mobile app.
 
 ### What you'll need
 
@@ -54,7 +54,7 @@ Add your server URL as a remote MCP server:
 2. Click **Download (CSV)**
 3. In Claude, say: *"Import my eBird life list"* and paste the CSV content
 
-Your life list is stored in your own Cloudflare KV namespace — private to you, synced across all your devices.
+Your life list is stored in your own Cloudflare KV namespace — private to you, accessible from any device.
 
 ---
 

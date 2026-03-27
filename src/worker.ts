@@ -41,7 +41,9 @@ export default {
       const server = createServer(env.EBIRD_API_KEY, env.XC_API_KEY, store);
       await server.connect(transport);
 
-      return await transport.handleRequest(request);
+      const response = await transport.handleRequest(request);
+      await server.close();
+      return response;
     } catch (error) {
       return new Response(
         JSON.stringify({
