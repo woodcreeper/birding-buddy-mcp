@@ -6,7 +6,10 @@ import { getLifeListNames } from "../data/life-list.js";
 import { getRoute } from "../clients/osrm.js";
 import { sampleWaypoints, sampleStraightLine } from "../utils/geo.js";
 
-export function registerCompoundTools(server: McpServer, client: EBirdClient, store: LifeListStore) {
+export function registerCompoundTools(server: McpServer, client: EBirdClient, store: LifeListStore, hasUploadEndpoint: boolean = false) {
+  const noListMsg = hasUploadEndpoint
+    ? "No life list loaded. Visit this server's /upload page in your browser to upload your eBird CSV directly."
+    : "No life list loaded. Import your life list first using the import_life_list tool with csvPath.";
   server.tool(
     "get_life_list_gaps_nearby",
     "Find birds near you that you've NEVER seen — your potential lifers! Requires life list to be imported first.",
@@ -24,7 +27,7 @@ export function registerCompoundTools(server: McpServer, client: EBirdClient, st
 
       if (lifeListNames.size === 0) {
         return {
-          content: [{ type: "text", text: "No life list loaded. Visit this server's /upload page in your browser to upload your eBird CSV directly." }],
+          content: [{ type: "text", text: noListMsg }],
         };
       }
 
@@ -79,7 +82,7 @@ export function registerCompoundTools(server: McpServer, client: EBirdClient, st
 
       if (lifeListNames.size === 0) {
         return {
-          content: [{ type: "text", text: "No life list loaded. Visit this server's /upload page in your browser to upload your eBird CSV directly." }],
+          content: [{ type: "text", text: noListMsg }],
         };
       }
 

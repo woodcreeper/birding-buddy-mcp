@@ -223,7 +223,7 @@ export default {
       });
 
       const store = new KVLifeListStore(env.LIFE_LIST_KV);
-      const server = createServer(env.EBIRD_API_KEY, env.XC_API_KEY, store);
+      const server = createServer(env.EBIRD_API_KEY, env.XC_API_KEY, store, { hasUploadEndpoint: true });
       await server.connect(transport);
 
       const response = await transport.handleRequest(request);
