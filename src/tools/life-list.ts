@@ -11,7 +11,7 @@ import {
 export function registerLifeListTools(server: McpServer, store: LifeListStore) {
   server.tool(
     "import_life_list",
-    "Import your eBird life list from a CSV export. Go to My eBird → Life List → Download (CSV) to get the file. Provide either a file path or paste the CSV content directly.",
+    "Import your eBird life list from a CSV export. For large life lists, use the direct upload page at /upload on this server instead — it avoids size limitations. Go to https://ebird.org/downloadMyData to get the CSV file.",
     {
       csvPath: z.string().optional().describe("Absolute path to the eBird CSV export file (local mode)"),
       csvContent: z.string().optional().describe("Raw CSV content pasted directly (remote/cloud mode)"),

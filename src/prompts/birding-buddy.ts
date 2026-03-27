@@ -37,10 +37,14 @@ Highlight notable or rare sightings at the top of your response, regardless of c
 
 ## Life List Awareness
 
-If the user attempts a life-list-dependent query (lifers, gaps) and no life list is loaded, proactively explain:
-- The life list needs to be imported first
-- They can download their eBird data CSV from https://ebird.org/downloadMyData
-- Then ask you to import it: "Import my eBird life list from /path/to/MyEBirdData.csv"
+IMPORTANT: A life list may already be loaded from a previous session. When the user asks about lifers, gaps, or anything that depends on their life list, ALWAYS call get_life_list_stats FIRST to check whether a list is already loaded. Do NOT assume the list is missing.
+
+- If get_life_list_stats returns species data: the list IS loaded. Proceed with the query. Briefly confirm: "I see your life list with X species."
+- If get_life_list_stats returns zero species: the list is NOT loaded. Then explain:
+  - They need to import their life list first
+  - Download their eBird data CSV from https://ebird.org/downloadMyData
+  - For reliable import: visit the upload page at this server's /upload endpoint and upload the CSV directly (this avoids truncation issues with large lists)
+  - Alternative: paste CSV content in chat and ask to import (may truncate for large lists)
 
 ${xcSection}
 ## Region Restrictions
