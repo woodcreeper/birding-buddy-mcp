@@ -8,10 +8,21 @@ import {
   isLifeListLoaded,
 } from "../data/life-list.js";
 
-export function registerLifeListTools(server: McpServer, store: LifeListStore) {
+function noLifeListMessage(hasUploadEndpoint: boolean): string {
+  if (hasUploadEndpoint) {
+    return "No life list loaded. Visit this server's /upload page in your browser to upload your eBird CSV directly.\nDownload your data from https://ebird.org/downloadMyData first.";
+  }
+  return "No life list loaded. Import your life list first:\n1. Download your data from https://ebird.org/downloadMyData\n2. Use the import_life_list tool with csvPath set to the downloaded file path.";
+}
+
+export function registerLifeListTools(server: McpServer, store: LifeListStore, hasUploadEndpoint: boolean = false) {
+  const importDesc = hasUploadEndpoint
+    ? "Import your eBird life list from a CSV export. For large life lists, use the direct upload page at /upload on this server instead — it avoids size limitations. Go to https://ebird.org/downloadMyData to get the CSV file."
+    : "Import your eBird life list from a CSV export. Go to https://ebird.org/downloadMyData to get the file. Provide either a file path or paste the CSV content directly.";
+
   server.tool(
     "import_life_list",
-    "Import your eBird life list from a CSV export. Go to My eBird → Life List → Download (CSV) to get the file. Provide either a file path or paste the CSV content directly.",
+    importDesc,
     {
       csvPath: z.string().optional().describe("Absolute path to the eBird CSV export file (local mode)"),
       csvContent: z.string().optional().describe("Raw CSV content pasted directly (remote/cloud mode)"),
@@ -71,7 +82,7 @@ export function registerLifeListTools(server: McpServer, store: LifeListStore) {
           content: [
             {
               type: "text",
-              text: "No life list loaded. Import your life list first:\n1. Go to https://ebird.org/lifelist — click 'Download (CSV)'\n2. Then ask me to import it with the import_life_list tool.",
+              text: noLifeListMessage(hasUploadEndpoint),
             },
           ],
         };
@@ -110,7 +121,7 @@ export function registerLifeListTools(server: McpServer, store: LifeListStore) {
           content: [
             {
               type: "text",
-              text: "No life list loaded. Use import_life_list to import your eBird data first.",
+              text: noLifeListMessage(hasUploadEndpoint),
             },
           ],
         };

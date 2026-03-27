@@ -1,8 +1,8 @@
-export function getBirdingBuddyInstructions(hasXenoCantoKey: boolean): string {
-  return formatInstructions(hasXenoCantoKey);
+export function getBirdingBuddyInstructions(hasXenoCantoKey: boolean, hasUploadEndpoint: boolean = false): string {
+  return formatInstructions(hasXenoCantoKey, hasUploadEndpoint);
 }
 
-function formatInstructions(hasXenoCantoKey: boolean): string {
+function formatInstructions(hasXenoCantoKey: boolean, hasUploadEndpoint: boolean): string {
   const xcSection = hasXenoCantoKey ? `
 ## Xeno-canto Enrichment Workflow
 
@@ -37,10 +37,14 @@ Highlight notable or rare sightings at the top of your response, regardless of c
 
 ## Life List Awareness
 
-If the user attempts a life-list-dependent query (lifers, gaps) and no life list is loaded, proactively explain:
-- The life list needs to be imported first
-- They can download their eBird data CSV from https://ebird.org/downloadMyData
-- Then ask you to import it: "Import my eBird life list from /path/to/MyEBirdData.csv"
+IMPORTANT: A life list may already be loaded from a previous session. When the user asks about lifers, gaps, or anything that depends on their life list, ALWAYS call get_life_list_stats FIRST to check whether a list is already loaded. Do NOT assume the list is missing.
+
+- If get_life_list_stats returns species data: the list IS loaded. Proceed with the query. Briefly confirm: "I see your life list with X species."
+- If get_life_list_stats returns zero species: the list is NOT loaded. Then explain:
+${hasUploadEndpoint
+  ? `  - Direct the user to upload their life list by visiting this server's /upload page in their browser (same base URL as this MCP server, just change /mcp to /upload). That page has step-by-step instructions. Do NOT ask the user to paste CSV content in chat — large life lists get truncated and the import will be incomplete.`
+  : `  - They can download their eBird data CSV from https://ebird.org/downloadMyData
+  - Then import it using: import_life_list with csvPath set to the downloaded file path`}
 
 ${xcSection}
 ## Region Restrictions

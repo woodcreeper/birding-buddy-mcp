@@ -12,8 +12,9 @@ import { registerFrequencyTools } from "./tools/frequency.js";
 import { registerXenoCantoTools } from "./tools/xeno-canto.js";
 import { getBirdingBuddyInstructions } from "./prompts/birding-buddy.js";
 
-export function createServer(apiKey: string, xcApiKey: string | undefined, lifeListStore: LifeListStore): McpServer {
-  const instructions = getBirdingBuddyInstructions(!!xcApiKey);
+export function createServer(apiKey: string, xcApiKey: string | undefined, lifeListStore: LifeListStore, options?: { hasUploadEndpoint?: boolean }): McpServer {
+  const hasUpload = options?.hasUploadEndpoint ?? false;
+  const instructions = getBirdingBuddyInstructions(!!xcApiKey, hasUpload);
   const server = new McpServer(
     { name: "birding-buddy-mcp", version: "1.0.0" },
     { instructions }
@@ -28,10 +29,10 @@ export function createServer(apiKey: string, xcApiKey: string | undefined, lifeL
   registerReferenceTools(server, client);
 
   // Life list tools (3)
-  registerLifeListTools(server, lifeListStore);
+  registerLifeListTools(server, lifeListStore, hasUpload);
 
   // Compound intelligence tools (3) + media (1)
-  registerCompoundTools(server, client, lifeListStore);
+  registerCompoundTools(server, client, lifeListStore, hasUpload);
   registerMediaTools(server, client);
 
   // Utility tools (1)
