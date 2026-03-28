@@ -83,6 +83,40 @@ export interface ChecklistFeedEntry {
   };
 }
 
+export interface ChecklistViewObs {
+  speciesCode: string;
+  obsDt: string;
+  howManyStr?: string;
+  obsComments?: string;
+}
+
+export interface ChecklistView {
+  subId: string;
+  protocolId: string;
+  locId: string;
+  loc: {
+    locId: string;
+    name: string;
+    latitude: number;
+    longitude: number;
+    countryCode: string;
+    countryName: string;
+    subnational1Name: string;
+    subnational1Code: string;
+    isHotspot: boolean;
+  };
+  obsDt: string;
+  obsTimeValid: boolean;
+  subComments?: string;
+  creationDt: string;
+  userDisplayName: string;
+  numSpecies: number;
+  numObservers?: number;
+  durationHrs?: number;
+  effortDistanceKm?: number;
+  obs: ChecklistViewObs[];
+}
+
 export interface RegionalStats {
   numChecklists: number;
   numContributors: number;
@@ -209,6 +243,10 @@ export class EBirdClient {
     maxResults?: number;
   } = {}): Promise<ChecklistFeedEntry[]> {
     return this.request<ChecklistFeedEntry[]>(`/product/lists/${regionCode}`, opts);
+  }
+
+  async getChecklistView(subId: string): Promise<ChecklistView> {
+    return this.request<ChecklistView>(`/product/checklist/view/${subId}`);
   }
 
   async getRegionalStats(regionCode: string, year: number, month: number, day: number): Promise<RegionalStats> {
