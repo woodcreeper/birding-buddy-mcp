@@ -7,7 +7,7 @@ function formatObservations(obs: Observation[]): string {
   return obs
     .map(
       (o) =>
-        `${o.comName} (${o.sciName}) [${o.speciesCode}] — ${o.howMany ?? "X"} at ${o.locName} (${o.obsDt})`
+        `${o.comName} (${o.sciName}) [${o.speciesCode}] — ${o.howMany ?? "X"} at ${o.locName} (${o.obsDt}) [checklist: ${o.subId} — https://ebird.org/checklist/${o.subId}]`
     )
     .join("\n");
 }

@@ -7,6 +7,7 @@ import { registerTaxonomyTools } from "./tools/taxonomy.js";
 import { registerReferenceTools } from "./tools/reference.js";
 import { registerLifeListTools } from "./tools/life-list.js";
 import { registerCompoundTools } from "./tools/compound.js";
+import { registerChecklistTools } from "./tools/checklists.js";
 
 import { registerFrequencyTools } from "./tools/frequency.js";
 import { registerXenoCantoTools } from "./tools/xeno-canto.js";
@@ -22,7 +23,7 @@ export function createServer(apiKey: string, xcApiKey: string | undefined, lifeL
 
   const client = new EBirdClient(apiKey);
 
-  // Core eBird API tools (12)
+  // Core eBird API tools (13)
   registerObservationTools(server, client);
   registerHotspotTools(server, client);
   registerTaxonomyTools(server, client);
@@ -33,6 +34,9 @@ export function createServer(apiKey: string, xcApiKey: string | undefined, lifeL
 
   // Compound intelligence tools (3)
   registerCompoundTools(server, client, lifeListStore, hasUpload);
+
+  // Checklist access tools (3)
+  registerChecklistTools(server, client);
 
   // Utility tools (1)
   registerFrequencyTools(server, client);

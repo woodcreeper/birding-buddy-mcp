@@ -192,7 +192,7 @@ export function registerCompoundTools(server: McpServer, client: EBirdClient, st
         .slice(0, 30) // Top 30
         .map(
           (h, i) =>
-            `${i + 1}. ${h.locName} [${h.locId}] — ${h.numSpeciesAllTime ?? "?"} species, (${h.lat.toFixed(4)}, ${h.lng.toFixed(4)})`
+            `${i + 1}. ${h.locName} [${h.locId}] — ${h.numSpeciesAllTime ?? "?"} species, (${h.lat.toFixed(4)}, ${h.lng.toFixed(4)}) — https://ebird.org/hotspot/${h.locId}`
         )
         .join("\n");
 
