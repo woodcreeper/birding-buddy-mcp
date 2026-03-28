@@ -2,7 +2,7 @@
 
 Your AI-powered birding companion. A TypeScript [MCP](https://modelcontextprotocol.io/) server that connects Claude to the [eBird API](https://documenter.getpostman.com/view/664302/S1ENwy59) and [Xeno-canto](https://xeno-canto.org/) — with personal intelligence like life list tracking, route-based hotspot discovery, and Xeno-canto recording enrichment.
 
-**23 tools** across 5 categories: core eBird API, life list management, compound intelligence, Xeno-canto enrichment, and utilities.
+**28 tools** across 6 categories: core eBird API, hotspot & checklist access, life list management, compound intelligence, Xeno-canto enrichment, and utilities.
 
 The server includes a **Birding Buddy** persona — always-active instructions that tell Claude how to route your questions to the right tools, group results by bird category, highlight rarities, and offer recording gap analysis when relevant. Just talk naturally.
 
@@ -115,6 +115,7 @@ Existing eBird MCP servers are thin API wrappers — they give Claude access to 
 - **Your life list** — imported from eBird's CSV export, so every query can filter for species you haven't seen
 - **Route intelligence** — finds birding hotspots along a driving route, not just near a single point
 - **Recording enrichment** — checks Xeno-canto for species with the fewest quality recordings, so you can target your sound recording efforts
+- **Checklist access** — resolve hotspots by name, browse recent checklists, and view full species lists — with direct eBird links throughout
 
 The eBird API provides the raw data. Claude provides the intelligence — it already knows which species are endemic, how to prioritize a birding itinerary, and how to reason about detection probability. This server bridges the two.
 
@@ -250,9 +251,9 @@ These are real things you can say to Claude once the server is running. Claude w
 
 ---
 
-## Tools Reference (23 total)
+## Tools Reference (28 total)
 
-### Core eBird API (12 tools)
+### Core eBird API (13 tools)
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
@@ -266,8 +267,17 @@ These are real things you can say to Claude once the server is running. Claude w
 | `get_hotspots_in_region` | Birding hotspots in a region | `regionCode`, `back` |
 | `get_nearby_hotspots` | Hotspots near a lat/lng | `lat`, `lng`, `dist` |
 | `get_hotspot_info` | Details for a specific hotspot | `locId` |
+| `resolve_hotspot` | Find a hotspot by name (fuzzy match) | `name`, `lat`, `lng`, `dist` |
 | `get_taxonomy` | Species taxonomy lookup | `species` (codes), `locale` |
 | `get_species_list` | All species ever recorded in a region | `regionCode` |
+
+### Checklist Access (3 tools)
+
+| Tool | Description | Key Parameters |
+|------|-------------|----------------|
+| `get_hotspot_observations` | Recent observations at a specific hotspot | `locId`, `back`, `maxResults` |
+| `get_recent_checklists` | Recent checklists at a hotspot, region, or near a location | `locId`, `regionCode`, or `lat`+`lng` |
+| `view_checklist` | Full species list for a specific checklist | `subId` |
 
 ### Life List (3 tools)
 
@@ -292,10 +302,12 @@ These are real things you can say to Claude once the server is running. Claude w
 | `get_recording_counts` | Recording count by quality grade (A-E) for a species | `speciesName`, `country` |
 | `enrich_species_list` | Batch XC enrichment, sorted by fewest A-grade recordings | `species` (array), `country` |
 
-### Utility (2 tools)
+### Reference & Utility (5 tools)
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
+| `get_region_info` | Details about an eBird region | `regionCode` |
+| `get_sub_regions` | Sub-regions within a region | `regionCode`, `regionType` |
 | `resolve_region_code` | Fuzzy match place names to eBird region codes | `placeName` |
 | `get_observation_frequency` | Estimate detection probability for a species/date | `regionCode`, `speciesCode`, `month`, `day` |
 
@@ -369,7 +381,8 @@ src/
 │   └── kv-store.ts       # Cloudflare KV storage
 ├── tools/
 │   ├── observations.ts   # 7 observation tools
-│   ├── hotspots.ts       # 3 hotspot tools
+│   ├── hotspots.ts       # 4 hotspot tools (incl. resolve_hotspot)
+│   ├── checklists.ts     # 3 checklist access tools
 │   ├── taxonomy.ts       # 2 taxonomy tools
 │   ├── reference.ts      # 3 reference + region resolver tools
 │   ├── life-list.ts      # 3 life list tools

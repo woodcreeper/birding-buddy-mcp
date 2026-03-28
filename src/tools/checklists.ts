@@ -54,16 +54,8 @@ export function registerChecklistTools(server: McpServer, client: EBirdClient) {
     async ({ locId, regionCode, lat, lng, maxResults }) => {
       const max = maxResults ?? 10;
 
-      // Determine the feed region identifier
-      let feedRegion: string;
-      let regionNote = "";
-
-      if (locId) {
-        feedRegion = locId;
-      } else if (regionCode) {
-        feedRegion = regionCode;
-      } else if (lat != null && lng != null) {
-        // Derive region from nearest hotspot
+      if (lat != null && lng != null && !locId && !regionCode) {
+        // Fetch checklists from the nearest hotspots directly
         const hotspots = await client.getNearbyHotspots(lat, lng, { dist: 50 });
         if (hotspots.length === 0) {
           return {
@@ -73,9 +65,50 @@ export function registerChecklistTools(server: McpServer, client: EBirdClient) {
             }],
           };
         }
-        feedRegion = hotspots[0].subnational1Code;
-        regionNote = ` (derived from nearest hotspot in ${feedRegion})`;
-      } else {
+
+        // Query the top 5 nearest hotspots for checklists, merge results
+        const topHotspots = hotspots.slice(0, 5);
+        const allEntries = (
+          await Promise.all(
+            topHotspots.map((h) =>
+              client.getChecklistFeed(h.locId, { maxResults: max }).catch(() => [])
+            )
+          )
+        ).flat();
+
+        // Sort by date descending, take top N
+        allEntries.sort((a, b) => b.obsDt.localeCompare(a.obsDt));
+        const entries = allEntries.slice(0, max);
+
+        if (entries.length === 0) {
+          return {
+            content: [{
+              type: "text",
+              text: "No recent checklists found at nearby hotspots.",
+            }],
+          };
+        }
+
+        const lines = entries.map((e) => {
+          const time = e.obsTime ? ` ${e.obsTime}` : "";
+          return [
+            `${e.userDisplayName} — ${e.numSpecies} species at ${e.loc.name} (${e.obsDt}${time})`,
+            `  Checklist: https://ebird.org/checklist/${e.subId}`,
+            `  Hotspot: https://ebird.org/hotspot/${e.loc.locId}`,
+          ].join("\n");
+        });
+
+        return {
+          content: [{
+            type: "text",
+            text: `Recent checklists near ${lat.toFixed(3)}, ${lng.toFixed(3)} (from ${topHotspots.length} nearby hotspots):\n\n${lines.join("\n\n")}`,
+          }],
+        };
+      }
+
+      // locId or regionCode path
+      const feedRegion = locId ?? regionCode;
+      if (!feedRegion) {
         return {
           content: [{
             type: "text",
@@ -90,7 +123,7 @@ export function registerChecklistTools(server: McpServer, client: EBirdClient) {
         return {
           content: [{
             type: "text",
-            text: `No recent checklists found for ${feedRegion}${regionNote}.`,
+            text: `No recent checklists found for ${feedRegion}.`,
           }],
         };
       }
@@ -107,7 +140,7 @@ export function registerChecklistTools(server: McpServer, client: EBirdClient) {
       return {
         content: [{
           type: "text",
-          text: `Recent checklists for ${feedRegion}${regionNote}:\n\n${lines.join("\n\n")}`,
+          text: `Recent checklists for ${feedRegion}:\n\n${lines.join("\n\n")}`,
         }],
       };
     }
@@ -121,6 +154,20 @@ export function registerChecklistTools(server: McpServer, client: EBirdClient) {
     },
     async ({ subId }) => {
       const checklist = await client.getChecklistView(subId);
+
+      // Resolve species codes to common names via taxonomy API
+      const codes = checklist.obs.map((o) => o.speciesCode);
+      const nameMap = new Map<string, string>();
+      if (codes.length > 0) {
+        try {
+          const taxonomy = await client.getTaxonomy({ species: codes.join(",") });
+          for (const t of taxonomy) {
+            nameMap.set(t.speciesCode, t.comName);
+          }
+        } catch {
+          // Fall back to species codes if taxonomy lookup fails
+        }
+      }
 
       const locationLine = checklist.loc.isHotspot
         ? `Location: ${checklist.loc.name} (${checklist.loc.locId}) — https://ebird.org/hotspot/${checklist.loc.locId}`
@@ -141,10 +188,10 @@ export function registerChecklistTools(server: McpServer, client: EBirdClient) {
       ].filter(Boolean);
 
       const speciesList = checklist.obs
-        .map(
-          (o) =>
-            `  ${o.speciesCode} — ${o.howManyStr ?? "X"}${o.obsComments ? ` (${o.obsComments})` : ""}`
-        )
+        .map((o) => {
+          const name = nameMap.get(o.speciesCode) ?? o.speciesCode;
+          return `  ${name} — ${o.howManyStr ?? "X"}${o.obsComments ? ` (${o.obsComments})` : ""}`;
+        })
         .join("\n");
 
       return {
