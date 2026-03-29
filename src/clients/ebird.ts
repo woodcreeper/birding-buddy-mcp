@@ -94,7 +94,7 @@ export interface ChecklistView {
   subId: string;
   protocolId: string;
   locId: string;
-  loc: {
+  loc?: {
     locId: string;
     name: string;
     latitude: number;

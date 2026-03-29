@@ -169,15 +169,18 @@ export function registerChecklistTools(server: McpServer, client: EBirdClient) {
         }
       }
 
-      const locationLine = checklist.loc.isHotspot
-        ? `Location: ${checklist.loc.name} (${checklist.loc.locId}) — https://ebird.org/hotspot/${checklist.loc.locId}`
-        : `Location: ${checklist.loc.name} (${checklist.loc.locId})`;
+      const loc = checklist.loc;
+      const locationLine = loc
+        ? loc.isHotspot
+          ? `Location: ${loc.name} (${loc.locId}) — https://ebird.org/hotspot/${loc.locId}`
+          : `Location: ${loc.name} (${loc.locId})`
+        : `Location: ${checklist.locId}`;
 
       const lines = [
         `Checklist: https://ebird.org/checklist/${checklist.subId}`,
         `Observer: ${checklist.userDisplayName}`,
         locationLine,
-        `${checklist.loc.subnational1Name}, ${checklist.loc.countryName}`,
+        loc ? `${loc.subnational1Name}, ${loc.countryName}` : null,
         `Date: ${checklist.obsDt}`,
         `Protocol: ${checklist.protocolId}`,
         checklist.numObservers ? `Observers: ${checklist.numObservers}` : null,
